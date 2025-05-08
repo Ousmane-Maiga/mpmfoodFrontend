@@ -1,5 +1,6 @@
 {
   "expo": {
+    "entryPoint": "./index.ts",
     "scheme": "acme",
     "plugins": [
       "expo-router"
