@@ -94,88 +94,147 @@
 
 
 
+// import React from 'react';
+// import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+// import { Ionicons } from '@expo/vector-icons';
+// import { useLocalSearchParams } from 'expo-router';
+
+// // Screens (Expo Router file-based paths)
+// import HomeScreen from './index';
+// import AdminScreen from './admin/index';
+// import CashierScreen from './cashier/index';
+// import KitchenScreen from './kitchen/index';
+// import DisplayScreen from './display/index';
+// import { useAuth } from '@/contexts/AuthContext';
+
+// // Types
+// type TabParamList = {
+//   home: undefined;
+//   admin: undefined;
+//   cashier: undefined;
+//   kitchen: undefined;
+//   display: undefined;
+// };
+
+// type TabBarIconProps = {
+//   color: string;
+//   size: number;
+// };
+
+// // Tab Icons Config (Cleaner approach)
+// const TAB_ICONS: Record<keyof TabParamList, keyof typeof Ionicons.glyphMap> = {
+//   home: 'home',
+//   admin: 'settings',
+//   cashier: 'cash',
+//   kitchen: 'restaurant',
+//   display: 'tv',
+// };
+
+// const Tab = createBottomTabNavigator<TabParamList>();
+
+// export default function AppLayout() {
+//   // Expo Router: Get URL params
+//   // const { employee_role } = useLocalSearchParams<{ employee_role?: string }>();
+
+//   const { user } = useAuth(); // ✅ Always rely on Auth Context
+//   const employee_role = user?.role;
+
+//   if (!employee_role) {
+//     return null; // Or a loading/fallback component
+//   }
+
+//   // React Navigation: Tab config
+//   return (
+//     <Tab.Navigator
+//       screenOptions={({ route }) => ({
+//         tabBarIcon: ({ color, size }: TabBarIconProps) => (
+//           <Ionicons 
+//             name={TAB_ICONS[route.name]} 
+//             size={size} 
+//             color={color} 
+//           />
+//         ),
+//         headerShown: false,
+//       })}
+//     >
+//       {/* Always visible */}
+//       <Tab.Screen name="home" component={HomeScreen} />
+
+//       {/* Conditionally visible tabs */}
+//       {employee_role === 'admin' && (
+//         <Tab.Screen name="admin" component={AdminScreen} />
+//       )}
+
+//       {(employee_role === 'admin' || employee_role === 'cashier') && (
+//         <Tab.Screen name="cashier" component={CashierScreen} />
+//       )}
+
+//       {(employee_role === 'admin' || employee_role === 'kitchen') && (
+//         <Tab.Screen name="kitchen" component={KitchenScreen} />
+//       )}
+
+//       {(employee_role === 'admin' || employee_role === 'display') && (
+//         <Tab.Screen name="display" component={DisplayScreen} />
+//       )}
+//     </Tab.Navigator>
+//   );
+// }
+
+
+
+
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-
-// Screens (Expo Router file-based paths)
+import { useAuth } from '@/contexts/AuthContext';
 import HomeScreen from './index';
 import AdminScreen from './admin/index';
 import CashierScreen from './cashier/index';
 import KitchenScreen from './kitchen/index';
 import DisplayScreen from './display/index';
+import { ActivityIndicator, View } from 'react-native';
 
-// Types
-type TabParamList = {
-  home: undefined;
-  admin: undefined;
-  cashier: undefined;
-  kitchen: undefined;
-  display: undefined;
-};
+const Tab = createBottomTabNavigator();
 
-type TabBarIconProps = {
-  color: string;
-  size: number;
-};
-
-// Tab Icons Config (Cleaner approach)
-const TAB_ICONS: Record<keyof TabParamList, keyof typeof Ionicons.glyphMap> = {
-  home: 'home',
-  admin: 'settings',
-  cashier: 'cash',
-  kitchen: 'restaurant',
-  display: 'tv',
-};
-
-const Tab = createBottomTabNavigator<TabParamList>();
+const TABS = [
+  { name: 'home', component: HomeScreen, icon: 'home', roles: ['admin', 'cashier', 'kitchen', 'display'] },
+  { name: 'admin', component: AdminScreen, icon: 'settings', roles: ['admin'] },
+  { name: 'cashier', component: CashierScreen, icon: 'cash', roles: ['admin', 'cashier'] },
+  { name: 'kitchen', component: KitchenScreen, icon: 'restaurant', roles: ['admin', 'kitchen'] },
+  { name: 'display', component: DisplayScreen, icon: 'tv', roles: ['admin', 'display'] },
+];
 
 export default function AppLayout() {
-  // Expo Router: Get URL params
-  const { employee_role } = useLocalSearchParams<{ employee_role?: string }>();
+  const { user, loading } = useAuth();
 
-  if (!employee_role) {
-    return null; // Or a loading/fallback component
+  if (loading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
   }
 
-  // React Navigation: Tab config
+  if (!user?.role) {
+    return null; // Or handle redirection to login screen here if needed
+  }
+
+  const employee_role = user.role;
+
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
-        tabBarIcon: ({ color, size }: TabBarIconProps) => (
-          <Ionicons 
-            name={TAB_ICONS[route.name]} 
-            size={size} 
-            color={color} 
-          />
-        ),
+        tabBarIcon: ({ color, size }) => {
+          const tab = TABS.find(t => t.name === route.name);
+          return <Ionicons name={tab?.icon as keyof typeof Ionicons.glyphMap} size={size} color={color} />;
+        },
         headerShown: false,
       })}
     >
-      {/* Always visible */}
-      <Tab.Screen name="home" component={HomeScreen} />
-
-      {/* Conditionally visible tabs */}
-      {employee_role === 'admin' && (
-        <Tab.Screen name="admin" component={AdminScreen} />
-      )}
-
-      {(employee_role === 'admin' || employee_role === 'cashier') && (
-        <Tab.Screen name="cashier" component={CashierScreen} />
-      )}
-
-      {(employee_role === 'admin' || employee_role === 'kitchen') && (
-        <Tab.Screen name="kitchen" component={KitchenScreen} />
-      )}
-
-      {(employee_role === 'admin' || employee_role === 'display') && (
-        <Tab.Screen name="display" component={DisplayScreen} />
-      )}
+      {TABS.filter(tab => tab.roles.includes(employee_role)).map(tab => (
+        <Tab.Screen key={tab.name} name={tab.name} component={tab.component} />
+      ))}
     </Tab.Navigator>
   );
 }
-
-
-
-

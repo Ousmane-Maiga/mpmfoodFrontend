@@ -44,7 +44,8 @@ export default function InventoryScreen() {
             title: "Price", 
             numeric: true,
             width: '20%',
-            render: (value) => `$${value.toFixed(2)}`
+            render: (value) => <Text>`$${value.toFixed(2)}`</Text>
+
           },
           { 
             key: "stock", 

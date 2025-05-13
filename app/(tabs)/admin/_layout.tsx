@@ -53,13 +53,7 @@ export default function AdminLayout() {
       />
 
       {/* Employee Details */}
-      {/* <Stack.Screen 
-        name="employees/[employeeId]" 
-        options={({ route }) => ({
-            title: (route.params as EmployeeDetailParams)?.name || 'Employess Details',
-            headerBackTitle: 'Employee',     
-        })}
-      /> */}
+      <Stack.Screen name="employees/[employeeId]" />
 
       {/* Inventory Management */}
       <Stack.Screen
@@ -70,14 +64,14 @@ export default function AdminLayout() {
         }}
       />
 
-      {/* Inventory Item Details */}
-      {/* <Stack.Screen
-        name="inventories/[itemId]"
-        options={({ route }) => ({
-          title: (route.params as InventoryItemParams)?.name || 'Product Details',
+      {/* Inventory Item Details */}<Stack.Screen
+        name="[itemId]"
+        options={{
+          title:  'Product Details',
           headerBackTitle: 'Inventory',
-        })}
-      /> */}
+        }}
+      />
+      
 
       {/* Sales Reports */}
       <Stack.Screen
@@ -89,16 +83,13 @@ export default function AdminLayout() {
       />
 
       {/* Order Details */}
-      {/* <Stack.Screen
-        name="sales/[orderId]"
-        options={({ route }) => {
-          const params = route.params as SalesOrderParams;
-          return {
-            title: params?.orderId ? `Order #${params.orderId}` : 'Order Details',
+      <Stack.Screen
+        name="[orderId]"
+        options={{
+            title: 'Order Details',
             headerBackTitle: 'Sales',
-          };
         }}
-      /> */}
+      />
 
       {/* Reports Screen (Example) */}
       <Stack.Screen

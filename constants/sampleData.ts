@@ -42,7 +42,7 @@ export const sampleEmployees: Employee[] = [
   {
     id: "1",
     name: "Alex Johnson",
-    role: "Chef",
+    role: "admin",
     email: "alex@mpmfood.com",
     phone: "(555) 123-4567",
     schedule: [
@@ -54,7 +54,7 @@ export const sampleEmployees: Employee[] = [
   {
     id: "2",
     name: "Sam Wilson",
-    role: "Waiter",
+    role: "admin",
     email: "sam@mpmfood.com",
     phone: "(555) 234-5678",
     schedule: [
@@ -66,7 +66,7 @@ export const sampleEmployees: Employee[] = [
   {
     id: "3",
     name: "Taylor Swift",
-    role: "Manager",
+    role: "admin",
     email: "taylor@mpmfood.com",
     phone: "(555) 345-6789",
     schedule: [

@@ -28,14 +28,14 @@ export default function SalesScreen() {
             key: "date", 
             title: "Date",
             width: '20%',
-            render: (value) => new Date(value).toLocaleDateString()
+            render: (value) => (<Text>{new Date(value).toLocaleDateString()}</Text>)
           },
           { 
             key: "total", 
             title: "Amount", 
             numeric: true,
             width: '15%',
-            render: (value) => `$${value.toFixed(2)}`
+            render: (value) => <Text>`$${value.toFixed(2)}`</Text>
           },
           { 
             key: "status", 
