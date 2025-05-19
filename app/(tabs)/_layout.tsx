@@ -184,6 +184,63 @@
 
 
 
+// import React from 'react';
+// import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+// import { Ionicons } from '@expo/vector-icons';
+// import { useAuth } from '@/contexts/AuthContext';
+// import HomeScreen from './index';
+// import AdminScreen from './admin/index';
+// import CashierScreen from './cashier/index';
+// import KitchenScreen from './kitchen/index';
+// import DisplayScreen from './display/index';
+// import { ActivityIndicator, View } from 'react-native';
+
+// const Tab = createBottomTabNavigator();
+
+// const TABS = [
+//   { name: 'home', component: HomeScreen, icon: 'home', roles: ['admin', 'cashier', 'kitchen', 'display'] },
+//   { name: 'admin', component: AdminScreen, icon: 'settings', roles: ['admin'] },
+//   { name: 'cashier', component: CashierScreen, icon: 'cash', roles: ['admin', 'cashier'] },
+//   { name: 'kitchen', component: KitchenScreen, icon: 'restaurant', roles: ['admin', 'kitchen'] },
+//   { name: 'display', component: DisplayScreen, icon: 'tv', roles: ['admin', 'display'] },
+// ];
+
+// export default function AppLayout() {
+//   const { user, loading } = useAuth();
+
+//   if (loading) {
+//     return (
+//       <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+//         <ActivityIndicator size="large" />
+//       </View>
+//     );
+//   }
+
+//   if (!user?.role) {
+//     return null; // Or handle redirection to login screen here if needed
+//   }
+
+//   const employee_role = user.role;
+
+//   return (
+//     <Tab.Navigator
+//       screenOptions={({ route }) => ({
+//         tabBarIcon: ({ color, size }) => {
+//           const tab = TABS.find(t => t.name === route.name);
+//           return <Ionicons name={tab?.icon as keyof typeof Ionicons.glyphMap} size={size} color={color} />;
+//         },
+//         headerShown: false,
+//       })}
+//     >
+//       {TABS.filter(tab => tab.roles.includes(employee_role)).map(tab => (
+//         <Tab.Screen key={tab.name} name={tab.name} component={tab.component} />
+//       ))}
+//     </Tab.Navigator>
+//   );
+// }
+
+
+
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -200,8 +257,20 @@ const Tab = createBottomTabNavigator();
 const TABS = [
   { name: 'home', component: HomeScreen, icon: 'home', roles: ['admin', 'cashier', 'kitchen', 'display'] },
   { name: 'admin', component: AdminScreen, icon: 'settings', roles: ['admin'] },
-  { name: 'cashier', component: CashierScreen, icon: 'cash', roles: ['admin', 'cashier'] },
-  { name: 'kitchen', component: KitchenScreen, icon: 'restaurant', roles: ['admin', 'kitchen'] },
+  { 
+    name: 'cashier', 
+    component: CashierScreen, 
+    icon: 'cash', 
+    roles: ['admin', 'cashier'],
+    initialParams: { user: null } // Will be filled dynamically
+  },
+  { 
+    name: 'kitchen', 
+    component: KitchenScreen, 
+    icon: 'restaurant', 
+    roles: ['admin', 'kitchen'],
+    initialParams: { user: null } // Will be filled dynamically
+  },
   { name: 'display', component: DisplayScreen, icon: 'tv', roles: ['admin', 'display'] },
 ];
 
@@ -217,10 +286,8 @@ export default function AppLayout() {
   }
 
   if (!user?.role) {
-    return null; // Or handle redirection to login screen here if needed
+    return null; // Or redirect to login
   }
-
-  const employee_role = user.role;
 
   return (
     <Tab.Navigator
@@ -232,9 +299,17 @@ export default function AppLayout() {
         headerShown: false,
       })}
     >
-      {TABS.filter(tab => tab.roles.includes(employee_role)).map(tab => (
-        <Tab.Screen key={tab.name} name={tab.name} component={tab.component} />
-      ))}
+      {TABS
+        .filter(tab => tab.roles.includes(user.role))
+        .map(tab => (
+          <Tab.Screen 
+            key={tab.name} 
+            name={tab.name} 
+            component={tab.component}
+            initialParams={{ user }} // Pass the user object here
+          />
+        ))
+      }
     </Tab.Navigator>
   );
 }

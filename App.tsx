@@ -1,5 +1,5 @@
 // App.tsx
-import React from 'react';
+import React from '@/hooks/node_modules/@types/react';
 import { View, Text, StyleSheet } from 'react-native';
 
 const App = () => {

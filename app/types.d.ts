@@ -37,15 +37,17 @@ type AuthStackParamList = {
   '(auth)/login': undefined;
 };
 
+type User = {
+  name: string;
+  role: string;
+};
+
 // 2. Define your admin stack routes
 type AdminStackParamList = {
   '(tabs)/admin/dashboard': undefined;
   '(tabs)/admin/employees': undefined;
   '(tabs)/admin/inventories': undefined;
   '(tabs)/admin/sales': undefined;
-  '(tabs)/admin/employees/[employeeId]': {
-    employeeId: string;
-  };
   '(tabs)/admin/inventories/[itemId]': {
     id: string;
     name?: string;
@@ -58,11 +60,11 @@ type AdminStackParamList = {
 
 // 3. Define your tab routes
 type TabParamList = {
-  home: { employee_role?: string };
+  home: { user: User };
   admin: NavigatorScreenParams<AdminStackParamList>;
-  cashier: { employee_role?: string };
-  display: { employee_role?: string };
-  kitchen: { employee_role?: string };
+  cashier: { user: User };
+  display: { user: User };
+  kitchen: { user: User };
 };
 
 // 4. Define your root stack

@@ -10,6 +10,10 @@ export const theme = {
     success: '#10b981',
     warning: '#f59e0b',
     danger: '#ef4444',
+    dangerLight: '#fee2e2', // Added dangerLight (red-100 from Tailwind)
+    successLight: '#d1fae5', // Bonus: added for consistency
+    warningLight: '#fef3c7', // Bonus: added for consistency
+    primaryLight: '#dbeafe', // Bonus: added for consistency
   },
   spacing: {
     xs: 4,
@@ -17,12 +21,21 @@ export const theme = {
     md: 16,
     lg: 24,
     xl: 32,
+    xxl: 40, // Bonus: added extra large spacing
   },
-  radii: {
+  radius: { // Added radius (singular) as an alias to radii for flexibility
     sm: 4,
     md: 8,
     lg: 12,
     xl: 16,
+    full: 999, // Bonus: full rounding for circular elements
+  },
+  radii: { // Keeping existing radii for backward compatibility
+    sm: 4,
+    md: 8,
+    lg: 12,
+    xl: 16,
+    full: 999, // Bonus: full rounding for circular elements
   },
   text: {
     heading1: {
@@ -48,6 +61,10 @@ export const theme = {
       fontSize: 12,
       lineHeight: 16,
     },
+    small: { // Bonus: added smaller text variant
+      fontSize: 14,
+      lineHeight: 20,
+    },
   },
   shadows: {
     sm: {
@@ -63,6 +80,13 @@ export const theme = {
       shadowOpacity: 0.1,
       shadowRadius: 6,
       elevation: 3,
+    },
+    lg: { // Bonus: added larger shadow variant
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.15,
+      shadowRadius: 8,
+      elevation: 6,
     },
   },
 } as const;

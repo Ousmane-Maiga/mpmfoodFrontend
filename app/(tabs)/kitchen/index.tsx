@@ -1,320 +1,219 @@
-// import React, { useState } from 'react';
-// import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-// import { styles } from './styles';
-// import { Order, OrderStatus } from './types';
+import React, { useState, useEffect } from 'react';
+import { View, Alert, StyleSheet } from 'react-native';
+import { useAuth } from '@/contexts/AuthContext';
+import { Button, Text, Avatar, useTheme } from 'react-native-paper';
+import KitchenModal from '@/components/kitchen/KitchenModal';
+import { getOrders, updateOrderStatus, setupOrderUpdates } from '@/services/api';
+import { Order, OrderStatus } from '@/types/cashierTypes';
+import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
+import { TabParamList } from '@/app/types';
 
-// interface AllOrdersScreenProps {
-//     initialTab?: OrderStatus; // Make it optional with ?
-//   }
+type KitchenRouteProp = RouteProp<TabParamList, 'kitchen'>;
 
-// const mockOrders: Order[] = [
-//   {
-//     id: 'Order123',
-//     customerName: 'Ousmane Maiga',
-//     status: 'pending',
-//     items: [
-//       { product: 'KFC', variant: '3 pieces', quantity: 2 },
-//       { product: 'KFC', variant: '4 pieces', quantity: 1 },
-//     ],
-//     createdAt: new Date(Date.now() - 120000), // 2 minutes ago
-//   },
-//   {
-//     id: 'Order07',
-//     customerName: 'Boubacar Maiga',
-//     status: 'pending',
-//     items: [
-//       { product: 'KFC', variant: '3 pieces', quantity: 1 },
-//       { product: 'KFC', variant: '6 pieces', quantity: 1 },
-//     ],
-//     createdAt: new Date(Date.now() - 300000), // 5 minutes ago
-//   },
-//   {
-//     id: 'Order10',
-//     customerName: 'Moussa Maiga',
-//     status: 'in-progress',
-//     items: [
-//       { product: 'KFC', variant: '3 pieces', quantity: 1 },
-//       { product: 'KFC', variant: '8 pieces', quantity: 1 },
-//     ],
-//     createdAt: new Date(Date.now() - 120000), // 2 minutes ago
-//     notes: 'Extra sauce',
-//   },
-//   {
-//     id: 'Order123',
-//     customerName: 'Hama Sidibe',
-//     status: 'ready',
-//     items: [
-//       { product: 'KFC', variant: '3 pieces', quantity: 3 },
-//     ],
-//     createdAt: new Date(Date.now() - 120000), // 2 minutes ago
-//     notes: 'No extra fries',
-//   },
-// ];
+export default function KitchenScreen() {
+  const route = useRoute<KitchenRouteProp>();
+  const { name, role } = route.params.user;
+  const [showKitchen, setShowKitchen] = useState(false);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [isActive, setIsActive] = useState(true);
+  //const [onBreak, setOnBreak] = useState(false);
+  const theme = useTheme();
+  const navigation = useNavigation();
+  const { 
+    user, 
+    loading: authLoading, 
+    onBreak, 
+    logout, 
+    toggleBreak 
+  } = useAuth();
+  const [localLoading, setLocalLoading] = useState(false);
 
-
-// // Update the component declaration
-// const KitchenScreen: React.FC<AllOrdersScreenProps> = ({ initialTab = 'all' }) => {
-//     const [activeTab, setActiveTab] = useState<OrderStatus>('pending'); // Default to pending
-//   const filteredOrders = activeTab === 'all' 
-//     ? mockOrders 
-//     : mockOrders.filter(order => order.status === activeTab);
-
-//   const formatTime = (date: Date) => {
-//     const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
-//     return `${minutes} min ago`;
-//   };
-
-//   const getActionButton = (status: OrderStatus) => {
-//     switch (status) {
-//       case 'pending':
-//         return 'Start Cooking';
-//       case 'in-progress':
-//         return 'Mark as Ready';
-//       case 'ready':
-//         return 'Send to delivery';
-//       default:
-//         return null;
-//     }
-//   };
-
-//   return (
-//     <View style={styles.container}>
-//       <View style={styles.header}>
-//         <Text style={{ fontSize: 20, fontWeight: 'bold' }}>Kitchen</Text>
-//       </View>
-
-//       <View style={styles.statusTabs}>
-//         <TouchableOpacity 
-//           style={activeTab === 'all' ? styles.activeTab : styles.tab}
-//           onPress={() => setActiveTab('all')}
-//         >
-//           <Text style={activeTab === 'all' ? styles.activeTabText : styles.tabText}>All Orders</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity 
-//           style={activeTab === 'pending' ? styles.activeTab : styles.tab}
-//           onPress={() => setActiveTab('pending')}
-//         >
-//           <Text style={activeTab === 'pending' ? styles.activeTabText : styles.tabText}>Pending</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity 
-//           style={activeTab === 'in-progress' ? styles.activeTab : styles.tab}
-//           onPress={() => setActiveTab('in-progress')}
-//         >
-//           <Text style={activeTab === 'in-progress' ? styles.activeTabText : styles.tabText}>In Progress</Text>
-//         </TouchableOpacity>
-//         <TouchableOpacity 
-//           style={activeTab === 'ready' ? styles.activeTab : styles.tab}
-//           onPress={() => setActiveTab('ready')}
-//         >
-//           <Text style={activeTab === 'ready' ? styles.activeTabText : styles.tabText}>Ready</Text>
-//         </TouchableOpacity>
-//       </View>
-
-//       <ScrollView>
-//         {filteredOrders.map((order) => (
-//           <View key={order.id} style={styles.orderCard}>
-//             <View style={styles.orderHeader}>
-//               <Text style={styles.orderId}>{order.id}</Text>
-//               <Text style={styles.orderTime}>{formatTime(order.createdAt)}</Text>
-//             </View>
-//             <Text style={styles.customerName}>Name: {order.customerName}</Text>
-            
-//             {order.items.map((item, index) => (
-//               <View key={index} style={styles.item}>
-//                 <Text style={styles.itemQuantity}>{item.quantity}x</Text>
-//                 <Text>{item.product} of {item.variant}</Text>
-//               </View>
-//             ))}
-
-//             {order.notes && (
-//               <Text style={styles.notes}>Notes: {order.notes}</Text>
-//             )}
-
-//             <View style={styles.divider} />
-
-//             <TouchableOpacity style={styles.actionButton}>
-//               <Text style={styles.actionButtonText}>{getActionButton(order.status)}</Text>
-//             </TouchableOpacity>
-//           </View>
-//         ))}
-//       </ScrollView>
-//     </View>
-//   );
-// };
-
-// export default KitchenScreen;
-
-
-
-import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity } from 'react-native';
-import { styles } from './styles';
-import { Order, OrderStatus, statusColors } from './types';
-
-interface AllOrdersScreenProps {
-  initialTab?: OrderStatus;
-}
-
-const mockOrders: Order[] = [
-  {
-    id: 'Order123',
-    customerName: 'Ousmane Maiga',
-    status: 'pending',
-    items: [
-      { product: 'KFC', variant: '3 pieces', quantity: 2 },
-      { product: 'KFC', variant: '4 pieces', quantity: 1 },
-    ],
-    createdAt: new Date(Date.now() - 120000),
-  },
-  {
-    id: 'Order07',
-    customerName: 'Boubacar Maiga',
-    status: 'pending',
-    items: [
-      { product: 'KFC', variant: '3 pieces', quantity: 1 },
-      { product: 'KFC', variant: '6 pieces', quantity: 1 },
-    ],
-    createdAt: new Date(Date.now() - 300000),
-  },
-  {
-    id: 'Order10',
-    customerName: 'Moussa Maiga',
-    status: 'in-progress',
-    items: [
-      { product: 'KFC', variant: '3 pieces', quantity: 1 },
-      { product: 'KFC', variant: '8 pieces', quantity: 1 },
-    ],
-    createdAt: new Date(Date.now() - 120000),
-    notes: 'Extra sauce',
-  },
-  {
-    id: 'Order123',
-    customerName: 'Hama Sidibe',
-    status: 'ready',
-    items: [
-      { product: 'KFC', variant: '3 pieces', quantity: 3 },
-    ],
-    createdAt: new Date(Date.now() - 120000),
-    notes: 'No extra fries',
-  },
-];
-
-const KitchenScreen: React.FC<AllOrdersScreenProps> = ({ initialTab = 'all' }) => {
-  const [activeTab, setActiveTab] = useState<OrderStatus>(initialTab);
-  const filteredOrders = activeTab === 'all' 
-    ? mockOrders 
-    : mockOrders.filter(order => order.status === activeTab);
-
-  const formatTime = (date: Date) => {
-    const minutes = Math.floor((Date.now() - date.getTime()) / 60000);
-    return `${minutes} min ago`;
-  };
-
-  const getActionButton = (status: OrderStatus) => {
-    switch (status) {
-      case 'pending':
-        return 'Start Cooking';
-      case 'in-progress':
-        return 'Mark as Ready';
-      case 'ready':
-        return 'Send to Delivery';
-      default:
-        return null;
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const ordersData = await getOrders();
+      setOrders(ordersData);
+    } catch (error) {
+      Alert.alert('Error', 'Failed to load orders');
+      console.error('Failed to load orders:', error);
+    } finally {
+      setLoading(false);
     }
   };
 
-  const getTabLabel = (tab: OrderStatus) => {
-    switch (tab) {
-      case 'all': return 'All Orders';
-      case 'in-progress': return 'In Progress';
-      default: return tab.charAt(0).toUpperCase() + tab.slice(1);
+  useEffect(() => {
+    if (showKitchen) {
+      fetchOrders();
+      
+      // Setup WebSocket for real-time updates
+      const cleanup = setupOrderUpdates((updatedOrder) => {
+        setOrders(prev => prev.map(o => o.id === updatedOrder.id ? updatedOrder : o));
+      });
+
+      return cleanup;
+    }
+  }, [showKitchen]);
+
+  const handleUpdateOrderStatus = async (orderId: string, status: OrderStatus) => {
+    try {
+      setLoading(true);
+      await updateOrderStatus(orderId, status);
+      await fetchOrders(); // Refresh orders after status update
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update order status');
+      console.error('Failed to update order status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Confirm Logout',
+      'Are you sure you want to logout?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { 
+          text: 'Logout', 
+          onPress: async () => {
+            setLocalLoading(true);
+            try {
+              await logout();
+              navigation.navigate('(auth)', { screen: '(auth)/login' });
+            } catch (error) {
+              Alert.alert('Error', 'Failed to logout');
+            } finally {
+              setLocalLoading(false);
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const handleToggleBreak = async () => {
+    setLocalLoading(true);
+    try {
+      await toggleBreak();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update break status');
+    } finally {
+      setLocalLoading(false);
     }
   };
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.headerText}>Kitchen Orders</Text>
-      </View>
-
-      <View style={styles.statusTabs}>
-        {(['all', 'pending', 'in-progress', 'ready'] as OrderStatus[]).map((tab) => (
-          <TouchableOpacity 
-            key={tab}
-            style={[
-              styles.tab, 
-              activeTab === tab && {
-                ...styles.activeTab,
-                borderBottomColor: statusColors[tab]
-              }
-            ]}
-            onPress={() => setActiveTab(tab)}
-          >
-            <Text style={[
-              styles.tabText,
-              activeTab === tab && {
-                ...styles.activeTabText,
-                color: statusColors[tab]
-              }
-            ]}>
-              {getTabLabel(tab)}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {filteredOrders.length > 0 ? (
-          filteredOrders.map((order) => (
-            <View key={`${order.id}-${order.createdAt.getTime()}`} style={styles.orderCard}>
-              <View style={styles.orderHeader}>
-                <Text style={styles.orderId}>#{order.id}</Text>
-                <Text style={styles.orderTime}>{formatTime(order.createdAt)}</Text>
-              </View>
-              
-              <Text style={styles.customerName}>{order.customerName}</Text>
-              
-              <View style={styles.itemsContainer}>
-                {order.items.map((item, index) => (
-                  <View key={`${item.product}-${index}`} style={styles.item}>
-                    <Text style={styles.itemQuantity}>{item.quantity}x</Text>
-                    <Text style={styles.itemText}>
-                      {item.product} ({item.variant})
-                    </Text>
-                  </View>
-                ))}
-              </View>
-
-              {order.notes && (
-                <View style={styles.notesContainer}>
-                  <Text style={styles.notesLabel}>Notes:</Text>
-                  <Text style={styles.notesText}>{order.notes}</Text>
-                </View>
-              )}
-
-              <View style={styles.divider} />
-
-              <TouchableOpacity 
-                style={[
-                  styles.actionButton,
-                  { backgroundColor: statusColors[order.status] }
-                ]}
-                onPress={() => console.log(`Action for ${order.id}`)}
-              >
-                <Text style={styles.actionButtonText}>
-                  {getActionButton(order.status)}
-                </Text>
-              </TouchableOpacity>
-            </View>
-          ))
-        ) : (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No {activeTab} orders</Text>
+      {/* User Status Bar */}
+      <View style={styles.userContainer}>
+        <View style={styles.userInfo}>
+          <Avatar.Text size={40} label={name.split(' ').map(n => n[0]).join('')} />
+          <View style={styles.userText}>
+            <Text style={styles.userName}>{name}</Text>
+            <Text style={styles.userRole}>{role}</Text>
           </View>
-        )}
-      </ScrollView>
+          <View style={[styles.statusDot, { backgroundColor: isActive ? '#4CAF50' : '#F44336' }]} />
+        </View>
+        <View style={styles.actions}>
+          <Button 
+          mode="outlined"
+          onPress={handleToggleBreak}
+          loading={localLoading}
+          disabled={authLoading || localLoading}
+          labelStyle={{ 
+            color: onBreak ? theme.colors.error : theme.colors.primary 
+          }}
+        >
+          {onBreak ? 'End Break' : 'Take Break'}
+          </Button>
+          <Button 
+          mode="contained"
+          onPress={handleLogout}
+          loading={localLoading}
+          disabled={authLoading || localLoading}
+          labelStyle={{ color: 'white' }}
+        >
+          Logout
+        </Button>
+        </View>
+      </View>
+
+      <Button 
+        mode="contained" 
+        onPress={() => setShowKitchen(true)}
+        style={styles.button}
+        loading={loading}
+        disabled={loading || !isActive || onBreak}
+      >
+        Open Kitchen View
+      </Button>
+
+      {/* Status Indicator */}
+      {onBreak && (
+        <Text style={styles.breakText}>You are currently on break - kitchen updates paused</Text>
+      )}
+
+      <KitchenModal
+        visible={showKitchen}
+        onClose={() => setShowKitchen(false)}
+        orders={orders}
+        onStatusChange={handleUpdateOrderStatus}
+      />
     </View>
   );
 };
 
-export default KitchenScreen;
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    padding: 16,
+  },
+  userContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  userInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userText: {
+    marginLeft: 10,
+  },
+  userName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  userRole: {
+    fontSize: 14,
+    color: '#666',
+  },
+  statusDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginLeft: 10,
+  },
+  actions: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    marginLeft: 8,
+  },
+  button: {
+    marginTop: 16,
+  },
+  breakText: {
+    textAlign: 'center',
+    color: '#FF9800',
+    marginTop: 16,
+    fontStyle: 'italic',
+  },
+});
+
+// export default KitchenScreen;

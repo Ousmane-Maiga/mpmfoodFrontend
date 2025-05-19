@@ -3,8 +3,12 @@ import { ScrollView, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, Vie
 import { Text } from "../../../../components/ui/Text";
 import { DataTable } from "../../../../components/ui/DataTable";
 import { theme } from "../../../../constants/theme";
-import { getEmployees } from "../../../../services/api";
-import EmployeeDetailScreen from './[employeeId]';
+import { getEmployees, createEmployee } from "../../../../services/api";
+// import EmployeeDetailModal from "./[employeeId]";
+import UpdateEmployeeModal from "@/components/admin/employees/UpdateEmployee";
+import AddEmployeeModal from "../../../../components/admin/employees/addEmployee";
+import { FloatingAction } from "react-native-floating-action";
+import { Ionicons } from '@expo/vector-icons';
 
 type Employee = {
   employee_id: string;
@@ -17,6 +21,7 @@ type Employee = {
 export default function EmployeesScreen() {
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [isModalVisible, setIsModalVisible] = useState(false);
+  const [isAddModalVisible, setIsAddModalVisible] = useState(false);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -43,18 +48,30 @@ export default function EmployeesScreen() {
     setIsModalVisible(true);
   };
 
-  const closeModal = () => {
-    setIsModalVisible(false);
-    setSelectedEmployee(null);
-  };
+ const closeModal = React.useCallback(() => {
+  setIsModalVisible(false);
+  // Add timeout to ensure modal is fully unmounted before clearing selection
+  setTimeout(() => setSelectedEmployee(null), 100); 
+}, []);
 
-  const handleUpdateEmployee = (updatedEmployee: Employee) => {
+   const handleUpdateEmployee = (updatedEmployee: Employee) => {
     setEmployees(prev => 
       prev.map(emp => 
         emp.employee_id === updatedEmployee.employee_id ? updatedEmployee : emp
       )
     );
+    closeModal();
   };
+
+  const handleAddEmployee = (newEmployee: Employee) => {
+    setEmployees(prev => [...prev, newEmployee]);
+    setIsAddModalVisible(false);
+  };
+
+  const handleDeleteEmployee = (deletedEmployeeId: string) => {
+  setEmployees(prev => prev.filter(emp => emp.employee_id !== deletedEmployeeId));
+  closeModal();
+};
 
   if (loading) {
     return (
@@ -73,57 +90,81 @@ export default function EmployeesScreen() {
   }
 
   return (
-    <ScrollView style={styles.container}>
-      <Text style={[theme.text.heading1, styles.header]}>Employees</Text>
+    <View style={styles.container}>
+      <ScrollView>
+        <View style={styles.headerContainer}>
+          <Text style={[theme.text.heading1, styles.header]}>Employees</Text>
+          <TouchableOpacity 
+            style={styles.addButton}
+            onPress={() => setIsAddModalVisible(true)}
+          >
+            <Ionicons name="add" size={24} color={theme.colors.primary} />
+          </TouchableOpacity>
+        </View>
 
-      <DataTable<Employee>
-        data={employees}
-        columns={[
-          {
-            key: "employee_name",
-            title: "Name",
-            sortable: true,
-            width: '40%',
-            render: (value: string, item: Employee) => (
-              <TouchableOpacity onPress={() => openModal(item)}>
-                <Text style={{ color: theme.colors.primary }}>
+        <DataTable<Employee>
+          data={employees}
+          columns={[
+            {
+              key: "employee_name",
+              title: "Name",
+              sortable: true,
+              width: '40%',
+              render: (value: string, item: Employee) => (
+                <TouchableOpacity onPress={() => openModal(item)}>
+                  <Text style={{ color: theme.colors.primary }}>
+                    {value}
+                  </Text>
+                </TouchableOpacity>
+              )
+            },
+            {
+              key: "employee_role",
+              title: "Role",
+              sortable: true,
+              width: '30%',
+              render: (value: string) => (
+                <Text style={{ color: theme.colors.text }}>
                   {value}
                 </Text>
-              </TouchableOpacity>
-            )
-          },
-          {
-            key: "employee_role",
-            title: "Position",
-            sortable: true,
-            width: '30%'
-          },
-          {
-            key: "employee_email",
-            title: "Email",
-            width: '30%'
-          }
-        ]}
-        pageSize={10}
-        keyExtractor={(item: Employee) => item.employee_id}
-      />
-
-      
-      <Modal
-        visible={isModalVisible}
-        animationType="slide"
-        onRequestClose={closeModal}
-      >
-        <EmployeeDetailScreen 
-          route={{
-            params: {
-              employeeId: selectedEmployee?.employee_id || ''
-            }
-          }}
-          navigation={navigator}
+              )
+            },
+            {
+              key: "employee_phone",
+              title: "Phone",
+              sortable: true,
+              width: '30%',
+              render: (value: string) => (
+                <Text style={{ color: theme.colors.text }}>
+                  {value || '-'}
+                </Text>
+              )
+            },
+          ]}
+          pageSize={10}
+          keyExtractor={(item: Employee) => item.employee_id}
         />
-      </Modal>
-    </ScrollView>
+      </ScrollView>
+
+     <UpdateEmployeeModal
+  employeeId={selectedEmployee?.employee_id || ''}
+  visible={isModalVisible}
+  onClose={closeModal}
+  onEmployeeUpdated={handleUpdateEmployee}
+  onEmployeeDeleted={() => {
+    if (selectedEmployee) {
+      handleDeleteEmployee(selectedEmployee.employee_id);
+    }
+  }}
+  key={selectedEmployee?.employee_id || 'modal'} // Force re-render
+/>
+
+      <AddEmployeeModal
+        visible={isAddModalVisible}
+        onClose={() => setIsAddModalVisible(false)}
+        onEmployeeAdded={handleAddEmployee}
+      />
+    </View>
   );
 }
 
@@ -138,9 +179,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center'
   },
-  header: {
+  headerContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: theme.spacing.lg,
+  },
+  header: {
     color: theme.colors.text,
+  },
+  addButton: {
+    padding: theme.spacing.sm,
   },
   errorText: {
     color: theme.colors.danger,
@@ -148,153 +197,3 @@ const styles = StyleSheet.create({
     marginTop: 20
   }
 });
-
-
-
-
-
-// import React, { useState, useEffect } from "react";
-// import { ScrollView, StyleSheet, Modal, TouchableOpacity } from "react-native";
-// import AsyncStorage from '@react-native-async-storage/async-storage';
-// import { Text } from "../../../../components/ui/Text";
-// import { DataTable } from "../../../../components/ui/DataTable";
-// import { sampleEmployees } from "../../../../constants/sampleData";
-// import { theme } from "../../../../constants/theme";
-// import EmployeeDetailScreen from './[employeeId]';
-
-// type Employee = {
-//   id: string;
-//   name: string;
-//   role: string;
-//   email?: string;
-//   phone?: string;
-//   schedule?: Array<{ day: string; shift: string }>;
-// };
-
-// const STORAGE_KEY = 'employee_data';
-
-// export default function EmployeesScreen() {
-//   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-//   const [isModalVisible, setIsModalVisible] = useState(false);
-//   const [employees, setEmployees] = useState<Employee[]>([]);
-
-//   // Load employees from storage on initial render
-//   useEffect(() => {
-//     const loadEmployees = async () => {
-//       try {
-//         const savedEmployees = await AsyncStorage.getItem(STORAGE_KEY);
-//         if (savedEmployees) {
-//           setEmployees(JSON.parse(savedEmployees));
-//         } else {
-//           // Initialize with sample data if no saved data exists
-//           setEmployees(sampleEmployees);
-//           await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(sampleEmployees));
-//         }
-//       } catch (error) {
-//         console.error('Failed to load employees', error);
-//         setEmployees(sampleEmployees);
-//       }
-//     };
-
-//     loadEmployees();
-//   }, []);
-
-//   const openModal = (employee: Employee) => {
-//     setSelectedEmployee(employee);
-//     setIsModalVisible(true);
-//   };
-
-//   const closeModal = () => {
-//     setIsModalVisible(false);
-//     setSelectedEmployee(null);
-//   };
-
-//   const handleUpdateEmployee = async (updatedData: Employee) => {
-//     try {
-//       const updatedEmployees = employees.map(emp => 
-//         emp.id === updatedData.id ? updatedData : emp
-//       );
-//       setEmployees(updatedEmployees);
-//       await AsyncStorage.setItem(STORAGE_KEY, JSON.stringify(updatedEmployees));
-//       setSelectedEmployee(updatedData);
-//     } catch (error) {
-//       console.error('Failed to save employee data', error);
-//     }
-//   };
-
-//   return (
-//     <ScrollView style={styles.container}>
-//       <Text style={[theme.text.heading1, styles.header]}>Employees</Text>
-
-//       <DataTable<Employee>
-//         data={employees}
-//         columns={[
-//           {
-//             key: "name",
-//             title: "Name",
-//             sortable: true,
-//             width: '40%',
-//             render: (value: string, item: Employee) => (
-//               <TouchableOpacity onPress={() => openModal(item)}>
-//                 <Text style={{ color: theme.colors.primary }}>
-//                   {value}
-//                 </Text>
-//               </TouchableOpacity>
-//             )
-//           },
-//           {
-//             key: "role",
-//             title: "Position",
-//             sortable: true,
-//             width: '30%'
-//           },
-//           {
-//             key: "email",
-//             title: "Email",
-//             width: '30%'
-//           }
-//         ]}
-//         pageSize={10}
-//         keyExtractor={(item: Employee) => item.id}
-//       />
-
-//       <Modal
-//         visible={isModalVisible}
-//         animationType="slide"
-//         onRequestClose={closeModal}
-//       >
-//         <ScrollView style={{ flex: 1, backgroundColor: theme.colors.background }}>
-//           {selectedEmployee && (
-//             <EmployeeDetailScreen 
-//               employeeId={selectedEmployee.id} 
-//               onEdit={handleUpdateEmployee}
-//             />
-//           )}
-//           <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
-//             <Text style={{color: 'white'}}>Close</Text>
-//           </TouchableOpacity>
-//         </ScrollView>
-//       </Modal>
-//     </ScrollView>
-//   );
-// }
-
-// const styles = StyleSheet.create({
-//   container: {
-//     flex: 1,
-//     backgroundColor: theme.colors.background,
-//     padding: theme.spacing.md,
-//   },
-//   header: {
-//     marginBottom: theme.spacing.lg,
-//     color: theme.colors.text,
-//   },
-//   closeButton: {
-//     padding: 10,
-//     backgroundColor: theme.colors.primary,
-//     alignSelf: 'center',
-//     marginTop: 20,
-//     marginBottom: 20,
-//     borderRadius: 5
-//   }
-// });
