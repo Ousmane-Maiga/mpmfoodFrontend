@@ -140,6 +140,17 @@ export default function EmployeesScreen() {
                 </Text>
               )
             },
+            {
+              key: "employee_id",
+              title: "ID",
+              sortable: true,
+              width: '30%',
+              render: (value: string) => (
+                <Text style={{ color: theme.colors.text }}>
+                  {value || '-'}
+                </Text>
+              )
+            },
           ]}
           pageSize={10}
           keyExtractor={(item: Employee) => item.employee_id}

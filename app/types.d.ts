@@ -1,36 +1,5 @@
-// import { NavigatorScreenParams } from '@react-navigation/native';
-
-
-// type RootStackParamList = {
-//     '/(auth)/login': string;
-//     '/(tabs)/home': { employee_role?: string };
-//     '/(tabs)/admin': { employee_role?: string };
-//     '/(tabs)/cashier': { employee_role?: string };
-//     '/(tabs)/display': { employee_role?: string };
-//     '/(tabs)/kitchen': { employee_role?: string };
-//   };
-
-//   export type AdminStackParamList = {
-//     'admin/dashboard': undefined;
-//     'admin/employees': undefined;
-//     'admin/employees/[employeeId]': { 
-//         employeeId: string;
-//         name?: string;
-//     };
-//     'admin/inventories': undefined;
-//     'admin/inventories/[itemId]': { id: string; name?: string };
-//     'admin/sales': undefined;
-//     'admin/sales/[orderId]': { id: string; orderId?: string };
-//   };
-  
-//   declare global {
-//     namespace ReactNavigation {
-//       interface RootParamList extends AdminStackParamList {}
-//     }
-//   }
-
-
 import { NavigatorScreenParams } from '@react-navigation/native';
+import { RouteProp } from '@react-navigation/native';
 
 // 1. Define your auth routes
 type AuthStackParamList = {
@@ -40,28 +9,22 @@ type AuthStackParamList = {
 type User = {
   name: string;
   role: string;
+  id: string; // Added ID for consistency
 };
 
 // 2. Define your admin stack routes
-type AdminStackParamList = {
-  '(tabs)/admin/dashboard': undefined;
-  '(tabs)/admin/employees': undefined;
-  '(tabs)/admin/inventories': undefined;
-  '(tabs)/admin/sales': undefined;
-  '(tabs)/admin/inventories/[itemId]': {
-    id: string;
-    name?: string;
-  };
-  '(tabs)/admin/sales/[orderId]': {
-    id: string;
-    orderId?: string;
-  };
-};
+// type AdminStackParamList = {
+//   '(tabs)/admin/dashboard': { user: User };
+//   '(tabs)/admin/employees': { user: User };
+//   '(tabs)/admin/inventories': { user: User };
+//   '(tabs)/admin/sales': { user: User };
+//   '(tabs)/admin/report': { user: User };
+// };
 
 // 3. Define your tab routes
 type TabParamList = {
   home: { user: User };
-  admin: NavigatorScreenParams<AdminStackParamList>;
+  admin: { user: User }; // Changed from NavigatorScreenParams to direct params
   cashier: { user: User };
   display: { user: User };
   kitchen: { user: User };
@@ -76,14 +39,16 @@ type RootStackParamList = {
 // 5. Global type declarations
 declare global {
   namespace ReactNavigation {
-    interface RootParamList extends RootStackParamList, AdminStackParamList {}
+    interface RootParamList extends RootStackParamList {}
   }
 }
 
 // Export types for use in components
 export type {
   AuthStackParamList,
-  AdminStackParamList,
+  // AdminStackParamList,
   TabParamList,
-  RootStackParamList
+  RootStackParamList,
+  User,
+  RouteProp  // Add RouteProp to exports
 };

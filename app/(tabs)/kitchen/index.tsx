@@ -3,10 +3,12 @@ import { View, Alert, StyleSheet } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button, Text, Avatar, useTheme } from 'react-native-paper';
 import KitchenModal from '@/components/kitchen/KitchenModal';
-import { getOrders, updateOrderStatus, setupOrderUpdates } from '@/services/api';
+import {  setupOrderUpdates } from '@/services/kitchenApi';
+import { getOrders, updateOrderStatus } from'@/services/cashierApi'
 import { Order, OrderStatus } from '@/types/cashierTypes';
-import { RouteProp, useNavigation, useRoute } from '@react-navigation/native';
-import { TabParamList } from '@/app/types';
+import { useNavigation, useRoute } from '@react-navigation/native'; 
+import { TabParamList, RouteProp } from '@/app/types'; 
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 type KitchenRouteProp = RouteProp<TabParamList, 'kitchen'>;
 
@@ -29,16 +31,19 @@ export default function KitchenScreen() {
   } = useAuth();
   const [localLoading, setLocalLoading] = useState(false);
 
+
+
+
   const fetchOrders = async () => {
-    try {
-      setLoading(true);
-      const ordersData = await getOrders();
-      setOrders(ordersData);
-    } catch (error) {
-      Alert.alert('Error', 'Failed to load orders');
-      console.error('Failed to load orders:', error);
-    } finally {
-      setLoading(false);
+     try {
+    setLoading(true);
+    const { orders: ordersData } = await getOrders({});
+    setOrders(ordersData);
+  } catch (error) {
+    Alert.alert('Error', 'Failed to load orders');
+    console.error('Failed to load orders:', error);
+  } finally {
+    setLoading(false);
     }
   };
 
@@ -104,11 +109,12 @@ export default function KitchenScreen() {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.container}>
       {/* User Status Bar */}
       <View style={styles.userContainer}>
         <View style={styles.userInfo}>
-          <Avatar.Text size={40} label={name.split(' ').map(n => n[0]).join('')} />
+          <Avatar.Text size={40} label={name.split(' ').map((n) => n[0]).join('')} />
           <View style={styles.userText}>
             <Text style={styles.userName}>{name}</Text>
             <Text style={styles.userRole}>{role}</Text>
@@ -161,10 +167,14 @@ export default function KitchenScreen() {
         onStatusChange={handleUpdateOrderStatus}
       />
     </View>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
     flex: 1,
     padding: 16,

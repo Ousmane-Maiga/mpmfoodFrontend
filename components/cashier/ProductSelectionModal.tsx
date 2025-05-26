@@ -1,222 +1,140 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { Modal, Button, Divider } from 'react-native-paper';
+import { View, Text, TouchableOpacity, ScrollView } from 'react-native';
+import { Button, Modal } from 'react-native-paper';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { Product } from '../../types/cashierTypes';
+import { styles } from './styles';
+import { Product, ProductVariant } from '@/types/cashierTypes';
 
 interface ProductSelectionModalProps {
   visible: boolean;
   products: Product[];
-  selectedProductId?: number | null;
-  selectedVariantId?: number | null;
-  initialQuantity?: number;
-  editingItemId?: number | null;
+  selectedProductId: number | null;
+  selectedVariantId: number | null;
+  initialQuantity: number;
+  editingItemId: number | null;
   onClose: () => void;
-  onSelectProduct: (productId: number, variantId: number, quantity: number, editingItemId?: number | null) => void;
+  onSelectProduct: (productId: number, variantId: number, quantity: number) => void;
 }
 
 const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
   visible,
   products,
-  selectedProductId = null,
-  selectedVariantId = null,
-  initialQuantity = 1,
-  editingItemId = null,
+  selectedProductId,
+  selectedVariantId,
+  initialQuantity,
+  editingItemId,
   onClose,
-  onSelectProduct
+  onSelectProduct,
 }) => {
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(
-    selectedProductId ? products.find(p => p.id === selectedProductId) || null : null
-  );
-  const [selectedVariantIdState, setSelectedVariantId] = useState<number | null>(selectedVariantId || null);
   const [quantity, setQuantity] = useState(initialQuantity);
+  const [currentSelectedProductId, setCurrentSelectedProductId] = useState<number | null>(selectedProductId);
+  const [currentSelectedVariantId, setCurrentSelectedVariantId] = useState<number | null>(selectedVariantId);
 
-  const handleConfirm = () => {
-    if (selectedProduct && selectedVariantIdState) {
-      onSelectProduct(selectedProduct.id, selectedVariantIdState, quantity, editingItemId);
-      resetSelection();
+  const selectedProduct = products.find(p => p.id === currentSelectedProductId);
+  const variants = selectedProduct?.variants || [];
+
+  const handleIncrement = () => {
+    setQuantity(prev => prev + 1);
+  };
+
+  const handleDecrement = () => {
+    if (quantity > 1) {
+      setQuantity(prev => prev - 1);
+    }
+  };
+
+  const handleSubmit = () => {
+    if (currentSelectedProductId && currentSelectedVariantId) {
+      onSelectProduct(currentSelectedProductId, currentSelectedVariantId, quantity);
       onClose();
     }
   };
 
-  const resetSelection = () => {
-    setSelectedProduct(null);
-    setSelectedVariantId(null);
-    setQuantity(1);
-  };
-
   return (
-    <Modal 
-      visible={visible} 
-      onDismiss={onClose}
-      contentContainerStyle={styles.modalContainer}
-    >
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Button 
-            icon={selectedProduct ? "arrow-left" : "close"} 
-            onPress={selectedProduct ? resetSelection : onClose}
-            children={undefined}
-          />
-          <Text style={styles.title}>
-            {selectedProduct ? `Select ${selectedProduct.name} Variant` : 'Select Product'}
-          </Text>
-          <View style={{ width: 48 }} />
+    <Modal visible={visible} onDismiss={onClose} contentContainerStyle={styles.productModal}>
+      <View style={styles.productModalContent}>
+        <View style={styles.productModalHeader}>
+          <Text style={styles.productModalTitle}>Select Product</Text>
+          <Button icon="close" onPress={onClose} children={undefined} />
         </View>
 
-        <Divider style={styles.divider} />
-
-        {!selectedProduct ? (
-          <ScrollView contentContainerStyle={styles.productsContainer}>
-            {products.map(product => (
+        <ScrollView style={styles.productList}>
+          {products.map(product => {
+            // Safely get first variant price and count
+            const firstVariantPrice = product.variants?.[0]?.price ?? 0;
+            const variantCount = product.variants?.length ?? 0;
+            
+            return (
               <TouchableOpacity
                 key={product.id}
-                style={styles.productItem}
-                onPress={() => setSelectedProduct(product)}
+                style={[
+                  styles.productItem,
+                  currentSelectedProductId === product.id && styles.selectedProductItem
+                ]}
+                onPress={() => {
+                  setCurrentSelectedProductId(product.id);
+                  // Safely set first variant ID or null
+                  setCurrentSelectedVariantId(product.variants?.[0]?.id ?? null);
+                }}
               >
                 <Text style={styles.productName}>{product.name}</Text>
-                <Icon name="chevron-right" size={24} color="#6200ee" />
+                <Text style={styles.productPrice}>
+                  ${firstVariantPrice.toFixed(2)} - {variantCount} variants
+                </Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        ) : (
-          <>
-            <ScrollView contentContainerStyle={styles.variantsContainer}>
-              {selectedProduct.variants.map(variant => (
+            );
+          })}
+        </ScrollView>
+
+        {selectedProduct && variants.length > 0 && (
+          <View style={styles.variantSection}>
+            <Text style={styles.sectionTitle}>Select Variant</Text>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+              {variants.map(variant => (
                 <TouchableOpacity
                   key={variant.id}
                   style={[
                     styles.variantItem,
-                    selectedVariantIdState === variant.id && styles.selectedVariant
+                    currentSelectedVariantId === variant.id && styles.selectedVariantItem
                   ]}
-                  onPress={() => setSelectedVariantId(variant.id)}
+                  onPress={() => setCurrentSelectedVariantId(variant.id)}
                 >
-                  <Text style={styles.variantText}>{variant.name} - {variant.price} XOF</Text>
+                  <Text style={styles.variantName}>{variant.name}</Text>
+                  <Text style={styles.variantPrice}>${variant.price.toFixed(2)}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
-
-            <View style={styles.quantityContainer}>
-              <Text style={styles.quantityLabel}>Quantity:</Text>
-              <View style={styles.quantityControls}>
-                <TouchableOpacity 
-                  onPress={() => setQuantity(Math.max(1, quantity - 1))}
-                  style={styles.quantityButton}
-                >
-                  <Icon name="minus-circle" size={32} color="#6200ee" />
-                </TouchableOpacity>
-                <Text style={styles.quantityText}>{quantity}</Text>
-                <TouchableOpacity 
-                  onPress={() => setQuantity(quantity + 1)}
-                  style={styles.quantityButton}
-                >
-                  <Icon name="plus-circle" size={32} color="#6200ee" />
-                </TouchableOpacity>
-              </View>
-            </View>
-
-            {selectedVariantIdState && (
-              <Button 
-                mode="contained" 
-                onPress={handleConfirm}
-                style={styles.confirmButton}
-                disabled={!selectedVariantIdState}
-              >
-                <Text>{selectedProductId ? 'Update Item' : 'Add to Order'}</Text>
-              </Button>
-            )}
-          </>
+          </View>
         )}
+
+        <View style={styles.quantitySection}>
+          <Text style={styles.sectionTitle}>Quantity</Text>
+          <View style={styles.quantityControls}>
+            <TouchableOpacity 
+              onPress={handleDecrement}
+              disabled={quantity <= 1}
+              style={[styles.quantityButton, quantity <= 1 && styles.disabledButton]}
+            >
+              <Icon name="minus" size={24} color={quantity <= 1 ? '#ccc' : '#333'} />
+            </TouchableOpacity>
+            <Text style={styles.quantityDisplay}>{quantity}</Text>
+            <TouchableOpacity onPress={handleIncrement} style={styles.quantityButton}>
+              <Icon name="plus" size={24} color="#333" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <Button 
+          mode="contained" 
+          onPress={handleSubmit}
+          disabled={!currentSelectedProductId || !currentSelectedVariantId}
+          style={styles.addToOrderButton}
+        >
+          {editingItemId ? 'Update Item' : 'Add to Order'}
+        </Button>
       </View>
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    margin: 0,
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: 'white',
-    height: '80%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1,
-  },
-  divider: {
-    marginVertical: 8,
-  },
-  productsContainer: {
-    paddingBottom: 16,
-  },
-  productItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  productName: {
-    fontSize: 16,
-  },
-  variantsContainer: {
-    paddingBottom: 16,
-  },
-  variantItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  selectedVariant: {
-    backgroundColor: '#f0f0f0',
-  },
-  variantText: {
-    fontSize: 16,
-  },
-  quantityContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginVertical: 16,
-    paddingHorizontal: 16,
-  },
-  quantityLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  quantityControls: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quantityButton: {
-    padding: 8,
-  },
-  quantityText: {
-    fontSize: 18,
-    marginHorizontal: 16,
-    minWidth: 24,
-    textAlign: 'center',
-  },
-  confirmButton: {
-    borderRadius: 8,
-    paddingVertical: 8,
-    marginTop: 8,
-  },
-});
 
 export default ProductSelectionModal;

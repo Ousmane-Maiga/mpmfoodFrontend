@@ -1,49 +1,21 @@
 import React, { useState } from 'react';
-import { View, TextInput, TouchableOpacity, StyleSheet, KeyboardAvoidingView, Platform, ScrollView, Text, Alert } from 'react-native';
+import { View, TextInput, TouchableOpacity, KeyboardAvoidingView, Platform, ScrollView, Text, Alert } from 'react-native';
 import { Button, SegmentedButtons, Divider, Modal, Portal } from 'react-native-paper';
-import { Formik } from 'formik';
-import * as yup from 'yup';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
-import { OrderItem, FormValues, Product } from '../../types/cashierTypes';
-import ProductSelectionModal from './ProductSelectionModal';
+import { styles } from './styles';
+import { 
+  AddOrderModalProps, 
+  FormValues, 
+  OrderItem, 
+  Product, 
+  OrderSource, 
+  OrderType,
+  FormErrors
+} from '@/types/cashierTypes';
 import OrderSummary from './OrderSummary';
-import { createOrder } from '@/services/api';
+import ProductSelectionModal from './ProductSelectionModal';
 
 const DELIVERY_PERSONS = ['Boura', 'Ahmed', 'Fatima'];
-
-const ORDER_SOURCES = [
-  { value: 'phone', label: 'Phone' },
-  { value: 'in_person', label: 'In Person' },
-  { value: 'online', label: 'Online' },
-  { value: 'third_party', label: 'Third Party' }
-];
-
-const orderSchema = yup.object().shape({
-  orderType: yup.string().required('Order type is required'),
-  name: yup.string().required('Customer name is required'),
-  phone: yup.string()
-    .required('Phone number is required')
-    .matches(/^[0-9]+$/, 'Must be only digits')
-    .min(8, 'Must be at least 8 digits'),
- orderSource: yup.string()
-    .required('Order source is required')
-    .oneOf(ORDER_SOURCES.map(src => src.value)),
-  address: yup.string().when('orderType', {
-    is: 'delivery',
-    then: (schema) => schema.required('Address is required for delivery'),
-  }),
-  deliverer: yup.string().when('orderType', {
-    is: 'delivery',
-    then: (schema) => schema.required('Deliverer is required for delivery'),
-  }),
-});
-
-interface AddOrderModalProps {
-  visible: boolean;
-  onClose: () => void;
-  onSubmit: (order: any) => void;
-  products: Product[];
-}
 
 const AddOrderModal: React.FC<AddOrderModalProps> = ({ 
   visible, 
@@ -55,46 +27,104 @@ const AddOrderModal: React.FC<AddOrderModalProps> = ({
   const [showProductModal, setShowProductModal] = useState(false);
   const [editingItem, setEditingItem] = useState<OrderItem | null>(null);
   const [showDelivererDropdown, setShowDelivererDropdown] = useState(false);
+  const [formValues, setFormValues] = useState<FormValues>({
+    orderType: 'delivery',
+    name: '',
+    phone: '',
+    orderSource: 'phone',
+    address: '',
+    deliverer: '',
+  });
+ 
 
- const handleAddOrUpdateProduct = (productId: number, variantId: number, quantity: number) => {
-  const product = products.find(p => p.id === productId);
-  const variant = product?.variants.find(v => v.id === variantId);
+const [errors, setErrors] = useState<FormErrors>({});
+
+// Update the validateForm function
+const validateForm = (): boolean => {
+  const newErrors: FormErrors = {};
   
-  if (!product || !variant) return;
-
-  if (editingItem) {
-    setOrderItems(orderItems.map(item => 
-      item.id === editingItem.id 
-        ? { 
-            ...item, 
-            product_id: productId,
-            product: product.name,
-            variant_id: variantId,
-            variant: variant.name,
-            quantity,
-            price: variant.price,
-            total: variant.price * quantity,
-            created_at: item.created_at // Preserve existing created_at
-          }
-        : item
-    ));
-  } else {
-    const newItem: OrderItem = {
-      id: Date.now(),
-      product_id: productId,
-      product: product.name,
-      variant_id: variantId,
-      variant: variant.name,
-      quantity,
-      price: variant.price,
-      total: variant.price * quantity,
-      order_id: 0,
-      created_at: new Date() // Add current date as default
-    };
-    setOrderItems([...orderItems, newItem]);
+  if (!formValues.orderType) {
+    newErrors.orderType = 'Order type is required';
   }
-  setEditingItem(null);
+  
+  if (!formValues.name) {
+    newErrors.name = 'Customer name is required';
+  }
+  
+  if (!formValues.phone) {
+    newErrors.phone = 'Phone number is required';
+  } else if (!/^[0-9]+$/.test(formValues.phone)) {
+    newErrors.phone = 'Must be only digits';
+  } else if (formValues.phone.length < 8) {
+    newErrors.phone = 'Must be at least 8 digits';
+  }
+  
+  if (!formValues.orderSource) {
+    newErrors.orderSource = 'Order source is required';
+  }
+  
+  if (formValues.orderType === 'delivery') {
+    if (!formValues.address) {
+      newErrors.address = 'Address is required for delivery';
+    }
+    if (!formValues.deliverer) {
+      newErrors.deliverer = 'Deliverer is required for delivery';
+    }
+  }
+  
+  setErrors(newErrors);
+  return Object.keys(newErrors).length === 0;
 };
+
+
+  
+
+  const handleAddOrUpdateProduct = (productId: number, variantId: number, quantity: number) => {
+    const product = products.find(p => p.id === productId);
+    const variant = product?.variants.find(v => v.id === variantId);
+    
+    if (!product || !variant) return;
+
+    const unitPrice = variant.price;
+    const totalPrice = unitPrice * quantity;
+
+    if (editingItem) {
+      setOrderItems(orderItems.map(item => 
+        item.id === editingItem.id 
+          ? { 
+              ...item, 
+              product_id: productId,
+              product: product.name,
+              variant_id: variantId,
+              variant: variant.name,
+              quantity,
+              unit_price: unitPrice,
+              total_price: totalPrice,
+              price: unitPrice, // Keeping for backward compatibility
+              total: totalPrice // Keeping for backward compatibility
+            }
+          : item
+      ));
+    } else {
+      const newItem: OrderItem = {
+        id: Date.now(),
+        order_id: 0, // Will be set when order is created
+        product_id: productId,
+        variant_id: variantId,
+        product: product.name,
+        variant: variant.name,
+        quantity,
+        unit_price: unitPrice,
+        discount_amount: 0,
+        total_price: totalPrice,
+        created_at: new Date().toISOString(),
+        price: unitPrice, // Keeping for backward compatibility
+        total: totalPrice // Keeping for backward compatibility
+      };
+      setOrderItems([...orderItems, newItem]);
+    }
+    setEditingItem(null);
+  };
 
   const handleRemoveProduct = (id: number) => {
     setOrderItems(orderItems.filter(item => item.id !== id));
@@ -104,7 +134,13 @@ const AddOrderModal: React.FC<AddOrderModalProps> = ({
     if (newQuantity < 1) return;
     setOrderItems(orderItems.map(item => {
       if (item.id === id) {
-        return { ...item, quantity: newQuantity, total: item.price * newQuantity };
+        const totalPrice = item.unit_price * newQuantity;
+        return { 
+          ...item, 
+          quantity: newQuantity, 
+          total_price: totalPrice,
+          total: totalPrice // Keeping for backward compatibility
+        };
       }
       return item;
     }));
@@ -118,219 +154,231 @@ const AddOrderModal: React.FC<AddOrderModalProps> = ({
   const resetForm = () => {
     setOrderItems([]);
     setEditingItem(null);
+    setFormValues({
+      orderType: 'delivery',
+      name: '',
+      phone: '',
+      orderSource: 'phone',
+      address: '',
+      deliverer: '',
+    });
+    setErrors({});
     onClose();
   };
 
+  const handleSubmit = async () => {
+    if (orderItems.length === 0) {
+      Alert.alert('Error', 'Please add at least one item to the order');
+      return;
+    }
 
-const handleSubmit = async (values: FormValues) => {
-  try {
+    if (!validateForm()) {
+      return;
+    }
+
+    // Calculate totals
+    const subtotal = orderItems.reduce((sum, item) => sum + item.total_price, 0);
+    const tax = subtotal * 0.1; // Example tax calculation
+    const total = subtotal + tax;
+
+    // Prepare order data
     const orderData = {
-      employee_id: '4d40e877-3752-4cde-b304-c2d3e23e4337',
-      store_id: 1,
-      orderData: {
-        customer_id: null,
-        order_type: values.orderType,
-        order_source: values.orderSource,
-        subtotal: orderItems.reduce((sum, item) => sum + item.total, 0),
-        total_amount: orderItems.reduce((sum, item) => sum + item.total, 0),
-        address: values.orderType === 'delivery' ? values.address : undefined, // Changed null to undefined
-        deliverer: values.orderType === 'delivery' ? values.deliverer : undefined, // Changed null to undefined
-        notes: '',
-        status: 'pending' as const // Explicitly type as 'pending'
-      },
+      values: formValues,
       items: orderItems.map(item => ({
-        product_id: item.product_id,
-        variant_id: item.variant_id,
-        quantity: item.quantity,
-        unit_price: item.price,
-        total_price: item.total
-      }))
+        ...item,
+        total_price: item.unit_price * item.quantity
+      })),
+      subtotal,
+      tax,
+      total
     };
 
-    await createOrder(orderData);
-    onSubmit(orderData);
-    resetForm();
-  } catch (error) {
-    console.error('Failed to create order:', error);
-    Alert.alert('Error', 'Failed to create order');
+    try {
+      await onSubmit(orderData.values, orderData.items);
+      resetForm();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to submit order');
+    }
+  };
+
+  const handleInputChange = (field: keyof FormValues, value: string | OrderType | OrderSource) => {
+  setFormValues(prev => ({
+    ...prev,
+    [field]: value
+  }));
+
+  // Clear error for this field if it exists
+  if (errors[field as keyof FormErrors]) {
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[field as keyof FormErrors];
+      return newErrors;
+    });
+  }
+
+  // Special case: when order type changes to pickup, clear delivery-specific fields
+  if (field === 'orderType' && value === 'pickup') {
+    setFormValues(prev => ({
+      ...prev,
+      address: '',
+      deliverer: ''
+    }));
+    
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors.address;
+      delete newErrors.deliverer;
+      return newErrors;
+    });
   }
 };
 
-   const setProductModalVisible = setShowProductModal;
-
   return (
     <Modal visible={visible} onDismiss={resetForm} contentContainerStyle={styles.modalContainer}>
-      <Formik
-        initialValues={{
-          orderType: 'delivery' as 'delivery' | 'pickup',
-          name: '',
-          phone: '',
-          orderSource: '' as 'phone' | 'in_person' | 'online' | 'third_party',
-          address: '',
-          deliverer: '',
-        }}
-        validationSchema={orderSchema}
-        onSubmit={handleSubmit}
+      <KeyboardAvoidingView 
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={styles.container}
       >
-        {({ handleChange, handleBlur, handleSubmit, values, errors, touched, setFieldValue }) => (
-          <KeyboardAvoidingView 
-            behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-            style={styles.container}
-          >
-            <View style={styles.header}>
-              <Button icon="close" onPress={resetForm} children={undefined} />
-              <Text style={styles.title}>
-                {editingItem ? 'Edit Order Item' : 'New Order'}
-              </Text>
-              <View style={{ width: 60 }} />
-            </View>
+        <View style={styles.header}>
+          <Button icon="close" onPress={resetForm} children={undefined} />
+          <Text style={styles.title}>
+            {editingItem ? 'Edit Order Item' : 'New Order'}
+          </Text>
+          <View style={{ width: 60 }} />
+        </View>
 
-            <ScrollView style={styles.content}>
-              <OrderSummary 
-                values={values}
-                orderItems={orderItems}
-                onAddProduct={() => {
-                  setEditingItem(null);
-                  setShowProductModal(true);
-                }}
-                onRemoveProduct={handleRemoveProduct}
-                onUpdateQuantity={handleUpdateQuantity}
-                onEditProduct={handleEditProduct}
-              />
+        <ScrollView style={styles.content}>
+          <OrderSummary 
+            values={formValues}
+            orderItems={orderItems}
+            onAddProduct={() => {
+              setEditingItem(null);
+              setShowProductModal(true);
+            }}
+            onRemoveProduct={handleRemoveProduct}
+            onUpdateQuantity={handleUpdateQuantity}
+            onEditProduct={handleEditProduct}
+          />
 
-              {/* Order Type Selection */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Order Type</Text>
+          {/* Order Type Selection */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Order Type</Text>
+            <SegmentedButtons
+              value={formValues.orderType}
+              onValueChange={(value) => handleInputChange('orderType', value)}
+              buttons={[
+                { value: 'delivery', label: 'Delivery' },
+                { value: 'pickup', label: 'Pick up' },
+              ]}
+              style={styles.segmentedButtons}
+            />
+            {errors.orderType && <Text style={styles.errorText}>{errors.orderType}</Text>}
+          </View>
+
+          {/* Customer Information */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Customer Information</Text>
+            
+            <TextInput
+              style={styles.input}
+              placeholder="Name"
+              value={formValues.name}
+              onChangeText={(text) => handleInputChange('name', text)}
+            />
+            {errors.name && <Text style={styles.errorText}>{errors.name}</Text>}
+
+            <TextInput
+              style={styles.input}
+              placeholder="Phone"
+              value={formValues.phone}
+              onChangeText={(text) => handleInputChange('phone', text)}
+              keyboardType="phone-pad"
+            />
+            {errors.phone && <Text style={styles.errorText}>{errors.phone}</Text>}
+
+            <View style={styles.dropdownContainer}>
+              <Text style={styles.dropdownLabel}>Order Source</Text>
+              <View style={styles.segmentedButtons}>
                 <SegmentedButtons
-                  value={values.orderType}
-                  onValueChange={(value) => setFieldValue('orderType', value)}
+                  value={formValues.orderSource}
+                  onValueChange={(value) => handleInputChange('orderSource', value)}
                   buttons={[
-                    { value: 'delivery', label: 'Delivery' },
-                    { value: 'pickup', label: 'Pick up' },
+                    { value: 'phone', label: 'Phone' },
+                    { value: 'in_person', label: 'In Person' },
+                    { value: 'online', label: 'Online' },
+                    { value: 'third_party', label: '3rd Party' },
                   ]}
-                  style={styles.segmentedButtons}
                 />
               </View>
-
-              {/* Customer Information */}
-              <View style={styles.section}>
-                <Text style={styles.sectionTitle}>Customer Information</Text>
-                
-                <TextInput
-                  style={styles.input}
-                  placeholder="Name"
-                  value={values.name}
-                  onChangeText={handleChange('name')}
-                  onBlur={handleBlur('name')}
-                />
-                {touched.name && errors.name && (
-                  <Text style={styles.errorText}>{errors.name}</Text>
-                )}
-
-                <TextInput
-                  style={styles.input}
-                  placeholder="Phone"
-                  value={values.phone}
-                  onChangeText={handleChange('phone')}
-                  onBlur={handleBlur('phone')}
-                  keyboardType="phone-pad"
-                />
-                {touched.phone && errors.phone && (
-                  <Text style={styles.errorText}>{errors.phone}</Text>
-                )}
-
-                <View style={styles.dropdownContainer}>
-                  <Text style={styles.dropdownLabel}>Order Source</Text>
-                  <View style={styles.segmentedButtons}>
-                    <SegmentedButtons
-                      value={values.orderSource}
-                      onValueChange={(value) => setFieldValue('orderSource', value)}
-                      buttons={[
-                        { value: 'phone', label: 'Phone' },
-                        { value: 'in_person', label: 'In Person' },
-                        { value: 'online', label: 'Online' },
-                        { value: 'third_party', label: '3rd Party' },
-                      ]}
-                    />
-                  </View>
-                  {touched.orderSource && errors.orderSource && (
-                    <Text style={styles.errorText}>{errors.orderSource}</Text>
-                  )}
-                </View>
-              </View>
-
-              {/* Delivery Information (Conditional) */}
-              {values.orderType === 'delivery' && (
-                <View style={styles.section}>
-                  <Text style={styles.sectionTitle}>Delivery Information</Text>
-                  
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Address"
-                    value={values.address}
-                    onChangeText={handleChange('address')}
-                    onBlur={handleBlur('address')}
-                    multiline
-                    numberOfLines={3}
-                  />
-                  {touched.address && errors.address && (
-                    <Text style={styles.errorText}>{errors.address}</Text>
-                  )}
-
-                  <View style={styles.dropdownContainer}>
-                    <Text style={styles.dropdownLabel}>Deliverer</Text>
-                    <TouchableOpacity
-                      style={styles.dropdown}
-                      onPress={() => setShowDelivererDropdown(true)}
-                    >
-                      <Text>{values.deliverer || 'Select deliverer'}</Text>
-                      <Icon name="chevron-down" size={20} />
-                    </TouchableOpacity>
-                    {touched.deliverer && errors.deliverer && (
-                      <Text style={styles.errorText}>{errors.deliverer}</Text>
-                    )}
-                  </View>
-
-                  <Portal>
-                    <Modal 
-                      visible={showDelivererDropdown} 
-                      onDismiss={() => setShowDelivererDropdown(false)}
-                      contentContainerStyle={styles.dropdownModal}
-                    >
-                      <ScrollView>
-                        {DELIVERY_PERSONS.map((person) => (
-                          <TouchableOpacity
-                            key={person}
-                            style={styles.dropdownItem}
-                            onPress={() => {
-                              setFieldValue('deliverer', person);
-                              setShowDelivererDropdown(false);
-                            }}
-                          >
-                            <Text>{person}</Text>
-                          </TouchableOpacity>
-                        ))}
-                      </ScrollView>
-                    </Modal>
-                  </Portal>
-                </View>
-              )}
-            </ScrollView>
-
-            <View style={styles.footer}>
-              <Button 
-                mode="contained" 
-                onPress={() => handleSubmit()}
-                disabled={orderItems.length === 0}
-                style={styles.submitButton}
-                labelStyle={styles.submitButtonLabel}
-              >
-                Complete Order
-              </Button>
+              {errors.orderSource && <Text style={styles.errorText}>{errors.orderSource}</Text>}
             </View>
-          </KeyboardAvoidingView>
-        )}
-      </Formik>
+          </View>
+
+          {/* Delivery Information (Conditional) */}
+          {formValues.orderType === 'delivery' && (
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Delivery Information</Text>
+              
+              <TextInput
+                style={styles.input}
+                placeholder="Address"
+                value={formValues.address}
+                onChangeText={(text) => handleInputChange('address', text)}
+                multiline
+                numberOfLines={3}
+              />
+              {errors.address && <Text style={styles.errorText}>{errors.address}</Text>}
+
+              <View style={styles.dropdownContainer}>
+                <Text style={styles.dropdownLabel}>Deliverer</Text>
+                <TouchableOpacity
+                  style={styles.dropdown}
+                  onPress={() => setShowDelivererDropdown(true)}
+                >
+                  <Text>{formValues.deliverer || 'Select deliverer'}</Text>
+                  <Icon name="chevron-down" size={20} />
+                </TouchableOpacity>
+                {errors.deliverer && <Text style={styles.errorText}>{errors.deliverer}</Text>}
+              </View>
+
+              <Portal>
+                <Modal 
+                  visible={showDelivererDropdown} 
+                  onDismiss={() => setShowDelivererDropdown(false)}
+                  contentContainerStyle={styles.dropdownModal}
+                >
+                  <ScrollView>
+                    {DELIVERY_PERSONS.map((person) => (
+                      <TouchableOpacity
+                        key={person}
+                        style={styles.dropdownItem}
+                        onPress={() => {
+                          handleInputChange('deliverer', person);
+                          setShowDelivererDropdown(false);
+                        }}
+                      >
+                        <Text>{person}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </Modal>
+              </Portal>
+            </View>
+          )}
+        </ScrollView>
+
+        <View style={styles.footer}>
+          <Button 
+            mode="contained" 
+            onPress={handleSubmit}
+            disabled={orderItems.length === 0}
+            style={styles.submitButton}
+            labelStyle={styles.submitButtonLabel}
+          >
+            Complete Order
+          </Button>
+        </View>
+      </KeyboardAvoidingView>
 
       <ProductSelectionModal
         visible={showProductModal}
@@ -338,157 +386,15 @@ const handleSubmit = async (values: FormValues) => {
         selectedProductId={editingItem?.product_id || null}
         selectedVariantId={editingItem?.variant_id || null}
         initialQuantity={editingItem?.quantity || 1}
-        editingItemId={editingItem?.id || null} // pass the item id for edit mode
+        editingItemId={editingItem?.id || null}
         onClose={() => {
-            setEditingItem(null);
-            setProductModalVisible(false);
+          setEditingItem(null);
+          setShowProductModal(false);
         }}
-        onSelectProduct={(productId: number, variantId: number, quantity: number) => {
-            const product = products.find(p => p.id === productId);
-            const variant = product?.variants.find(v => v.id === variantId);
-            
-    if (product && variant) {
-      if (editingItem) {
-        // Update existing item
-        setOrderItems(orderItems.map(item => 
-          item.id === editingItem.id 
-            ? { 
-                ...item, 
-                product_id: productId,
-                product: product.name,
-                variant_id: variantId,
-                variant: variant.name,
-                quantity,
-                price: variant.price,
-                total: variant.price * quantity
-              }
-            : item
-        ));
-      } else {
-        // Add new item
-        const newItem: OrderItem = {
-          id: Date.now(),
-          product_id: productId,
-          product: product.name,
-          variant_id: variantId,
-          variant: variant.name,
-          quantity,
-          price: variant.price,
-          total: variant.price * quantity,
-          order_id: 0
-        };
-        setOrderItems([...orderItems, newItem]);
-      }
-    }
-    setEditingItem(null);
-    setShowProductModal(false);
-  }}
-/>
+        onSelectProduct={handleAddOrUpdateProduct}
+      />
     </Modal>
   );
 };
-
-const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    margin: 0,
-    justifyContent: 'flex-end',
-  },
-  container: {
-    backgroundColor: 'white',
-    height: '90%',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: 16,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 16,
-  },
-  title: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flex: 1,
-  },
-  content: {
-    flex: 1,
-    marginBottom: 16,
-  },
-  footer: {
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-  },
-  section: {
-    marginBottom: 24,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    padding: 16,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12,
-    color: '#333',
-  },
-  segmentedButtons: {
-    marginBottom: 8,
-  },
-  input: {
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 12,
-    marginBottom: 8,
-    fontSize: 16,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 12,
-    marginTop: -8,
-    marginBottom: 12,
-  },
-  dropdownContainer: {
-    marginBottom: 16,
-  },
-  dropdownLabel: {
-    fontSize: 14,
-    marginBottom: 8,
-    color: '#666',
-  },
-  dropdown: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    backgroundColor: 'white',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 4,
-    padding: 12,
-  },
-  dropdownModal: {
-    backgroundColor: 'white',
-    margin: 20,
-    borderRadius: 8,
-    maxHeight: 300,
-  },
-  dropdownItem: {
-    padding: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  submitButton: {
-    borderRadius: 8,
-    paddingVertical: 8,
-  },
-  submitButtonLabel: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
 
 export default AddOrderModal;

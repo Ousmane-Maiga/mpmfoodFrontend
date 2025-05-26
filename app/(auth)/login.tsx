@@ -178,56 +178,6 @@
 
 
 
-// // import React, { useState } from 'react';
-// // import { View, Text, TextInput, Button, Alert, StyleSheet } from 'react-native';
-// // import { useAuth } from '@/contexts/AuthContext';
-// // import { useRouter } from 'expo-router';
-
-// // export default function LoginScreen() {
-// //   const [employee_name, setEmployeeName] = useState('');
-// //   const [pin, setPin] = useState('');
-// //   const { login, loading } = useAuth();
-// //   const router = useRouter();
-
-// //   const handleLogin = async () => {
-// //     try {
-// //       await login({ employee_name, pin });
-// //       // ✅ Ensure context has updated
-// //       router.replace('/(tabs)');
-// //     } catch (error) {
-// //       Alert.alert('Login Failed', 'Invalid credentials or server error.');
-// //     }
-// //   };
-
-// //   return (
-// //     <View style={styles.container}>
-// //       <Text style={styles.title}>Login</Text>
-// //       <TextInput
-// //         placeholder="Employee Name"
-// //         value={employee_name}
-// //         onChangeText={setEmployeeName}
-// //         style={styles.input}
-// //       />
-// //       <TextInput
-// //         placeholder="PIN"
-// //         value={pin}
-// //         onChangeText={setPin}
-// //         secureTextEntry
-// //         style={styles.input}
-// //       />
-// //       <Button title={loading ? 'Logging in...' : 'Login'} onPress={handleLogin} disabled={loading} />
-// //     </View>
-// //   );
-// // }
-
-// // const styles = StyleSheet.create({
-// //   container: { flex: 1, justifyContent: 'center', padding: 20 },
-// //   title: { fontSize: 24, marginBottom: 20, textAlign: 'center' },
-// //   input: { borderWidth: 1, borderColor: '#ccc', padding: 10, marginBottom: 10, borderRadius: 5 },
-// // });
-
-
-
 
 import React from 'react';
 import { View, Image, StyleSheet, Alert } from 'react-native';

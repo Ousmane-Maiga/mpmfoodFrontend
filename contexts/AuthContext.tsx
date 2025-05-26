@@ -150,7 +150,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
 
       const userData: AuthUser = {
-        id: response.employee_id.toString(),
+        id: response.employee_id,
         role: response.employee_role,
         name: employee_name
       };

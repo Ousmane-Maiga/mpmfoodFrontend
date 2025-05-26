@@ -6,26 +6,17 @@
     "esModuleInterop": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "lib": [
-      "dom",
-      "esnext"
-    ],
-    "moduleResolution": "node",
+    "lib": ["dom", "esnext"],
+    "module": "esnext",
+    "moduleResolution": "bundler", 
     "noEmit": true,
     "strict": true,
     "target": "esnext",
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/*": ["./*"]
     }
   },
-  "exclude": [
-    "hooks/node_modules"
-  ],
-  "include": [
-    "**/*.ts",
-    "**/*.tsx"
-  ]
+  "exclude": ["hooks/node_modules"],
+  "include": ["**/*.ts", "**/*.tsx"]
 }

@@ -108,9 +108,8 @@ const EmployeeDetailModal: React.FC<EmployeeDetailModalProps> = ({
               role={employeeData.employee_role} 
             />
             <EmployeeContactInfo 
-              email={employeeData.employee_email}
-              phone={employeeData.employee_phone}
-            />
+                email={employeeData.employee_email}
+                phone={employeeData.employee_phone} id={''}            />
             <EmployeeSchedule schedule={schedule} />
             <EmployeeActions 
               onEdit={() => setIsEditing(true)}

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { View, FlatList, StyleSheet } from 'react-native';
 import { Text, Button, SegmentedButtons, Modal } from 'react-native-paper';
-import { Order } from '../../types/cashierTypes';
+import { Order, OrderStatus } from '../../types/cashierTypes';
 
-interface AllOrdersModalProps {
+export interface AllOrdersModalProps {
   visible: boolean;
   onClose: () => void;
   orders: Order[];
   onPrint: (orderId: string) => void;
+  // Removed onUpdateStatus since cashier won't be changing statuses
 }
 
 const AllOrdersModal: React.FC<AllOrdersModalProps> = ({ 
@@ -16,17 +17,17 @@ const AllOrdersModal: React.FC<AllOrdersModalProps> = ({
   orders,
   onPrint
 }) => {
-  const [filter, setFilter] = useState<'All' | 'pending' | 'in_progress' | 'ready' | 'completed' | 'cancelled'>('All');
+  const [filter, setFilter] = useState<'all' | OrderStatus>('all');
 
-  const filteredOrders = filter === 'All' 
+  const filteredOrders = filter === 'all' 
     ? orders 
     : orders.filter(order => order.status === filter);
 
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'pending': return 'Pending';
-      case 'in_progress': return 'In Progress';
-      case 'ready': return 'Ready';
+      case 'in_progress': return 'In Progress (Kitchen)';
+      case 'ready': return 'Ready for Pickup';
       case 'completed': return 'Completed';
       case 'cancelled': return 'Cancelled';
       default: return status;
@@ -49,17 +50,17 @@ const AllOrdersModal: React.FC<AllOrdersModalProps> = ({
       <View style={styles.container}>
         <View style={styles.header}>
           <Button icon="close" onPress={onClose} children={undefined} />
-          <Text style={styles.title}>All Orders</Text>
+          <Text style={styles.title}>Order Status</Text>
           <View style={{ width: 60 }} />
         </View>
 
         <SegmentedButtons
           value={filter}
-          onValueChange={(value) => setFilter(value as any)}
+          onValueChange={(value) => setFilter(value as 'all' | OrderStatus)}
           buttons={[
-            { value: 'All', label: 'All' },
+            { value: 'all', label: 'All' },
             { value: 'pending', label: 'Pending' },
-            { value: 'in_progress', label: 'In Progress' },
+            { value: 'in_progress', label: 'In Kitchen' },
             { value: 'ready', label: 'Ready' },
             { value: 'completed', label: 'Completed' },
           ]}
@@ -72,7 +73,11 @@ const AllOrdersModal: React.FC<AllOrdersModalProps> = ({
           renderItem={({ item }) => (
             <View style={styles.orderItem}>
               <Text style={styles.orderId}>Order #{item.id}</Text>
-              {item.customer_id && <Text style={styles.customerName}>Customer ID: {item.customer_id}</Text>}
+              {item.customer_name && (
+                <Text style={styles.customerName}>
+                  Customer: {item.customer_name} {item.customer_phone ? `(${item.customer_phone})` : ''}
+                </Text>
+              )}
               
               <View style={styles.statusContainer}>
                 <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
