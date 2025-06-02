@@ -1,15 +1,16 @@
+// OrderStatusTabs.tsx
 import React from 'react';
-import { View, TouchableOpacity, Text } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet } from 'react-native'; // Import StyleSheet
 import { OrderStatusFilter } from '@/types/cashierTypes';
-import { styles } from './styles';
+// import { styles } from './styles'; // If styles are in a separate file, make sure to import correctly
 
 const statusColors = {
-  all: '#6200ee',
-  pending: '#FFA500',
-  in_progress: '#1E90FF',
-  ready: '#32CD32',
-  completed: '#808080',
-  cancelled: '#FF0000'
+  all: '#000000',      // Black for 'All Orders'
+  pending: '#FFA500',  // Orange
+  in_progress: '#1E90FF', // Dodger Blue
+  ready: '#32CD32',    // Lime Green
+  completed: '#808080', // Grey
+  cancelled: '#FF0000' // Red
 } as const;
 
 interface OrderStatusTabsProps {
@@ -18,7 +19,7 @@ interface OrderStatusTabsProps {
 }
 
 const OrderStatusTabs: React.FC<OrderStatusTabsProps> = ({ activeTab, onTabChange }) => {
-  const tabs: OrderStatusFilter[] = ['all', 'pending', 'in_progress', 'ready'];
+  const tabs: OrderStatusFilter[] = ['all', 'pending', 'in_progress', 'ready', 'completed'];
 
   const getTabLabel = (tab: OrderStatusFilter) => {
     switch (tab) {
@@ -46,7 +47,7 @@ const OrderStatusTabs: React.FC<OrderStatusTabsProps> = ({ activeTab, onTabChang
             styles.tabText,
             activeTab === tab && {
               ...styles.activeTabText,
-              color: statusColors[tab]
+              color: statusColors[tab] // Apply specific color for active tab
             }
           ]}>
             {getTabLabel(tab)}
@@ -56,5 +57,30 @@ const OrderStatusTabs: React.FC<OrderStatusTabsProps> = ({ activeTab, onTabChang
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  statusTabs: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#fff',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
+  },
+  tab: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+  },
+  activeTab: {
+    borderBottomWidth: 2,
+  },
+  tabText: {
+    fontSize: 14,
+    color: '#666',
+  },
+  activeTabText: {
+    fontWeight: 'bold',
+  },
+});
 
 export default OrderStatusTabs;

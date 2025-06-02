@@ -90,7 +90,7 @@ const OrderCard: React.FC<OrderCardProps> = ({ order, onStatusChange }) => {
               <Text style={styles.itemName}>
                 {item.product} - {item.variant}
               </Text>
-              <Text style={styles.itemPrice}>{item.total} XOF</Text>
+              <Text style={styles.itemPrice}>{item.total_price} XOF</Text>
             </View>
           ))}
         </View>
@@ -218,3 +218,4 @@ const styles = StyleSheet.create({
 });
 
 export default OrderCard;
+

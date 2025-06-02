@@ -1,15 +1,74 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { View, StyleSheet, Alert, ScrollView, SafeAreaView, RefreshControl } from 'react-native';
-import { Button, Text, Avatar, useTheme, DataTable, ActivityIndicator, FAB, Card, Modal, Portal } from 'react-native-paper';
+import { Button, Text, Avatar, DataTable, ActivityIndicator, FAB, Card, Modal, Portal } from 'react-native-paper';
 import { useAuth } from '@/contexts/AuthContext';
+import { theme } from '@/constants/theme'
 import { useFocusEffect, useNavigation, useRoute } from '@react-navigation/native'; 
 import { TabParamList, RouteProp } from '@/app/types'; 
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AddInventoryModal from '@/components/admin/inventories/AddInventoryModal';
 import EditInventoryModal from '@/components/admin/inventories/EditInventoryModal';
 import { getInventoryItems, createInventoryItem, updateInventoryItem, getInventoryUsage, setupInventoryUpdates } from '@/services/api';
 import { InventoryItem, InventoryItemUpdate, InventoryUsage } from '@/types/admin';
 
 type InventoryScreenRouteProp = RouteProp<TabParamList, 'admin'>;
+
+const InventoryStats = ({ items }: { items: InventoryItem[] }) => {
+  
+  const stats = useMemo(() => {
+    const totalItems = items.length;
+    const lowStockItems = items.filter(item => item.quantity <= item.min_threshold).length;
+    const totalValue = items.reduce((sum, item) => {
+      return sum + (item.cost_per_unit ? item.cost_per_unit * item.quantity : 0);
+    }, 0);
+    const recentlyRestocked = items.filter(item => {
+      const lastRestocked = new Date(item.last_restocked);
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      return lastRestocked > oneWeekAgo;
+    }).length;
+
+    return { totalItems, lowStockItems, totalValue, recentlyRestocked };
+  }, [items]);
+
+  return (
+    <View style={styles.statsContainer}>
+      <View style={styles.statItem}>
+        <View style={styles.statValueContainer}>
+          <Icon name="package" size={24} color={theme.colors.primary} />
+          <Text style={styles.statValue}>{stats.totalItems}</Text>
+        </View>
+        <Text style={styles.statLabel}>Total Items</Text>
+      </View>
+
+      <View style={styles.statItem}>
+        <View style={styles.statValueContainer}>
+          <Icon name="alert" size={24} color={stats.lowStockItems > 0 ? theme.colors.danger : theme.colors.primary} />
+          <Text style={[styles.statValue, stats.lowStockItems > 0 && { color: theme.colors.danger }]}>
+            {stats.lowStockItems}
+          </Text>
+        </View>
+        <Text style={styles.statLabel}>Low Stock</Text>
+      </View>
+
+      {/* <View style={styles.statItem}>
+        <View style={styles.statValueContainer}>
+          <Icon name="currency-francs" size={24} color={theme.colors.primary} />
+          <Text style={styles.statValue}>{stats.totalValue.toFixed(2)}FCFA</Text>
+        </View>
+        <Text style={styles.statLabel}>Total Value</Text>
+      </View> */}
+
+      <View style={styles.statItem}>
+        <View style={styles.statValueContainer}>
+          <Icon name="truck-delivery" size={24} color={theme.colors.primary} />
+          <Text style={styles.statValue}>{stats.recentlyRestocked}</Text>
+        </View>
+        <Text style={styles.statLabel}>Recent Restocks</Text>
+      </View>
+    </View>
+  );
+};
 
 export default function InventoryScreen() {
   const route = useRoute<InventoryScreenRouteProp>();
@@ -20,19 +79,15 @@ export default function InventoryScreen() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
-  const theme = useTheme();
   const [showSupplierInfo, setShowSupplierInfo] = useState(false);
   const { loading: authLoading, logout } = useAuth();
-   const [refreshing, setRefreshing] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [usageData, setUsageData] = useState<InventoryUsage[]>([]);
 
   const name = authUser?.name || 'Admin';
   const role = authUser?.role || 'Administrator';
 
-  // State for usage data (was missing)
-  const [usageData, setUsageData] = useState<InventoryUsage[]>([]);
-
-  // Fetch inventory items
-    const fetchInventory = async () => {
+  const fetchInventory = async () => {
     try {
       setLoading(true);
       const items = await getInventoryItems();
@@ -46,14 +101,12 @@ export default function InventoryScreen() {
     }
   };
 
-  // Fetch on focus and initial load
   useFocusEffect(
     React.useCallback(() => {
       fetchInventory();
     }, [])
   );
 
-   // Set up WebSocket for real-time updates
   useEffect(() => {
     const cleanup = setupInventoryUpdates((updatedItems: any[]) => {
       setInventoryItems(prevItems => 
@@ -63,11 +116,9 @@ export default function InventoryScreen() {
         })
       );
     });
-
     return cleanup;
   }, []);
 
-  // Manual refresh
   const onRefresh = React.useCallback(() => {
     setRefreshing(true);
     fetchInventory();
@@ -78,15 +129,14 @@ export default function InventoryScreen() {
     setShowDetailModal(true);
   };
 
-  // Handle adding new inventory item
   const handleAddItem = async (item: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at' | 'last_restocked'>) => {
     try {
       setLoading(true);
       const newItem = await createInventoryItem({
         ...item,
-        created_at: new Date().toISOString(), // Provide actual dates
-        updated_at: new Date().toISOString(), // Provide actual dates
-        last_restocked: new Date().toISOString() // Provide actual dates
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+        last_restocked: new Date().toISOString()
       });
       setInventoryItems(prev => [...prev, newItem]);
       setShowAddModal(false);
@@ -99,11 +149,9 @@ export default function InventoryScreen() {
     }
   };
 
-  // Handle updating inventory item
   const handleUpdateItem = async (updatedItem: InventoryItem) => {
     try {
       setLoading(true);
-
       const payload: InventoryItemUpdate = {
         name: updatedItem.name,
         type: updatedItem.type,
@@ -113,12 +161,10 @@ export default function InventoryScreen() {
         supplier_id: updatedItem.supplier_id === null ? undefined : updatedItem.supplier_id,
         cost_per_unit: updatedItem.cost_per_unit === null ? undefined : updatedItem.cost_per_unit
       };
-
       const result = await updateInventoryItem({
         ...payload,
         id: updatedItem.id
       });
-
       setInventoryItems(prev =>
         prev.map(item => (item.id === updatedItem.id ? result : item))
       );
@@ -132,15 +178,12 @@ export default function InventoryScreen() {
     }
   };
 
-  // Handle viewing usage history
   const handleViewUsage = async (item: InventoryItem) => {
     try {
       setLoading(true);
       setSelectedItem(item);
-      
-      const usage = await getInventoryUsage(item.id); // Pass item.id
+      const usage = await getInventoryUsage(item.id);
       setUsageData(usage);
-      
       console.log('Usage Data:', usage);
       Alert.alert('Usage History', 'Usage data loaded to console for now.');
     } catch (error) {
@@ -150,7 +193,6 @@ export default function InventoryScreen() {
       setLoading(false);
     }
   };
-
 
   const renderDetailModal = () => (
     <Portal>
@@ -175,7 +217,7 @@ export default function InventoryScreen() {
                 <Text style={styles.detailLabel}>Quantity:</Text>
                 <Text style={{
                   color: selectedItem.quantity <= selectedItem.min_threshold
-                    ? theme.colors.error
+                    ? theme.colors.danger
                     : 'inherit'
                 }}>
                   {selectedItem.quantity} {selectedItem.unit}
@@ -226,33 +268,11 @@ export default function InventoryScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea}>
-    <View style={styles.container}>
-      {/* User Status Bar */}
-      <View style={styles.userContainer}>
-        <View style={styles.userInfo}>
-          <Avatar.Text size={40} label={name.split(' ').map(n => n[0]).join('')} />
-          <View style={styles.userText}>
-            <Text style={styles.userName}>{name}</Text>
-            <Text style={styles.userRole}>{role}</Text>
-          </View>
-        </View>
-        {/* Logout button and other actions can go here if needed */}
-        {/* Example:
-        <Button mode="outlined" onPress={logout}>Logout</Button>
-        */}
-      </View>
-
-      <Button
-        mode="contained"
-        onPress={() => setShowAddModal(true)}
-        labelStyle={{ color: 'white' }}
-        style={{ marginBottom: 16 }} // Added some margin for spacing
-      >
-        Add Item
-      </Button>
-
-      {/* Inventory Table */}
-      <ScrollView 
+      <View style={styles.container}>
+        {/* Add Inventory Stats Component */}
+        <InventoryStats items={inventoryItems} />
+        
+        <ScrollView 
           style={styles.scrollContainer}
           refreshControl={
             <RefreshControl
@@ -261,78 +281,77 @@ export default function InventoryScreen() {
             />
           }
         >
-        {loading ? (
-          <ActivityIndicator animating={true} style={styles.loader} />
-        ) : (
-          <DataTable>
-            <DataTable.Header>
-              <DataTable.Title style={styles.centerText}>Item Name</DataTable.Title>
-              <DataTable.Title numeric style={styles.centerText}>Quantity</DataTable.Title>
-              <DataTable.Title style={styles.centerText}>Last Restocked</DataTable.Title>
-              <DataTable.Title style={styles.centerText}>Actions</DataTable.Title>
-            </DataTable.Header>
+          {loading ? (
+            <ActivityIndicator animating={true} style={styles.loader} />
+          ) : (
+            <DataTable>
+              <DataTable.Header>
+                <DataTable.Title style={styles.centerText}>Item Name</DataTable.Title>
+                <DataTable.Title numeric style={styles.centerText}>Quantity</DataTable.Title>
+                <DataTable.Title style={styles.centerText}>Last Restocked</DataTable.Title>
+                <DataTable.Title style={styles.centerText}>Actions</DataTable.Title>
+              </DataTable.Header>
 
-            {inventoryItems.map(item => (
-              <DataTable.Row key={item.id}>
-                <DataTable.Cell style={styles.centerText}>
-                  <Text
-                    style={styles.clickableText}
-                    onPress={() => handleItemPress(item)}
-                  >
-                    {item.name}
-                  </Text>
-                </DataTable.Cell>
-                <DataTable.Cell numeric style={styles.centerText}>
-                  <Text style={{
-                    color: item.quantity <= item.min_threshold
-                      ? theme.colors.error
-                      : 'inherit'
-                  }}>
-                    {item.quantity} {item.unit}
-                  </Text>
-                </DataTable.Cell>
-                <DataTable.Cell style={styles.centerText}>
-                  {new Date(item.last_restocked).toLocaleDateString()}
-                </DataTable.Cell>
-                <DataTable.Cell style={styles.centerText}>
-                  <Button
-                    compact
-                    mode="outlined"
-                    onPress={() => {
-                      setSelectedItem(item);
-                      setShowEditModal(true);
-                    }}
-                  >
-                    Edit
-                  </Button>
-                </DataTable.Cell>
-              </DataTable.Row>
-            ))}
-          </DataTable>
-        )}
-      </ScrollView>
+              {inventoryItems.map(item => (
+                <DataTable.Row key={item.id}>
+                  <DataTable.Cell style={styles.centerText}>
+                    <Text
+                      style={styles.clickableText}
+                      onPress={() => handleItemPress(item)}
+                    >
+                      {item.name}
+                    </Text>
+                  </DataTable.Cell>
+                  <DataTable.Cell numeric style={styles.centerText}>
+                    <Text style={{
+                      color: item.quantity <= item.min_threshold
+                        ? theme.colors.danger
+                        : 'inherit'
+                    }}>
+                      {item.quantity} {item.unit}
+                    </Text>
+                  </DataTable.Cell>
+                  <DataTable.Cell style={styles.centerText}>
+                    {new Date(item.last_restocked).toLocaleDateString()}
+                  </DataTable.Cell>
+                  <DataTable.Cell style={styles.centerText}>
+                    <Button
+                      compact
+                      mode="outlined"
+                      onPress={() => {
+                        setSelectedItem(item);
+                        setShowEditModal(true);
+                      }}
+                    >
+                      Edit
+                    </Button>
+                  </DataTable.Cell>
+                </DataTable.Row>
+              ))}
+            </DataTable>
+          )}
+        </ScrollView>
 
-      {/* Keep your existing Add and Edit modals */}
-      <AddInventoryModal
-        visible={showAddModal}
-        onClose={() => setShowAddModal(false)}
-        onSubmit={handleAddItem}
-      />
+        <AddInventoryModal
+          visible={showAddModal}
+          onClose={() => setShowAddModal(false)}
+          onSubmit={handleAddItem}
+        />
 
-      <EditInventoryModal
-        visible={showEditModal}
-        onClose={() => setShowEditModal(false)}
-        item={selectedItem}
-        onSubmit={handleUpdateItem}
-      />
+        <EditInventoryModal
+          visible={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          item={selectedItem}
+          onSubmit={handleUpdateItem}
+        />
 
-      <FAB
-        icon="plus"
-        style={styles.fab}
-        onPress={() => setShowAddModal(true)}
-      />
-      {renderDetailModal()}
-    </View>
+        <FAB
+          icon="plus"
+          style={styles.fab}
+          onPress={() => setShowAddModal(true)}
+        />
+        {renderDetailModal()}
+      </View>
     </SafeAreaView>
   );
 }
@@ -344,30 +363,6 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
-  },
-  userContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-    paddingBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-  },
-  userInfo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userText: {
-    marginLeft: 10,
-  },
-  userName: {
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  userRole: {
-    fontSize: 14,
-    color: '#666',
   },
   scrollContainer: {
     flex: 1,
@@ -390,14 +385,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#6200ee',
   },
   modalContainer: {
-    backgroundColor: 'white', // Added background color for modal
+    backgroundColor: 'white',
     padding: 20,
-    margin: 20, // Added margin to center the modal
+    margin: 20,
     borderRadius: 8,
   },
-  detailCard: {
-    // No specific styles needed here, modalContainer handles sizing
-  },
+  detailCard: {},
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -413,7 +406,40 @@ const styles = StyleSheet.create({
     marginTop: 8,
     borderRadius: 6
   },
-  refreshControl: {
-    backgroundColor: 'transparent',
+  statsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around', 
+    marginVertical: 16,
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  statItem: {
+    alignItems: 'center',
+    justifyContent: 'center', 
+    flexShrink: 1,
+  },
+  statValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  statValue: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginLeft: 4,
+    textAlign: 'center',
+    color: '#666',
+  },
+  statLabel: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
+    textAlign: 'center',
   },
 });

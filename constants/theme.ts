@@ -4,8 +4,10 @@ export const theme = {
     secondary: '#64748b',
     background: '#f8fafc',
     card: '#ffffff',
+    surface: '#ffffff',
     text: '#1e293b',
     textSecondary: '#64748b',
+    placeholder: '#94a3b8', // A lighter grey for placeholders
     border: '#e2e8f0',
     success: '#10b981',
     warning: '#f59e0b',
@@ -14,6 +16,7 @@ export const theme = {
     successLight: '#d1fae5', // Bonus: added for consistency
     warningLight: '#fef3c7', // Bonus: added for consistency
     primaryLight: '#dbeafe', // Bonus: added for consistency
+    backdrop: '#cbd5e1', // A light grey, similar to Tailwind's slate-300 or gray-300, suitable for borders/dividers
   },
   spacing: {
     xs: 4,

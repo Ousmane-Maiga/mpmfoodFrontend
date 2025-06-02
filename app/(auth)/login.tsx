@@ -257,6 +257,7 @@ export default function LoginScreen() {
               onBlur={handleBlur('employee_name')}
               style={styles.input}
               error={touched.employee_name && !!errors.employee_name}
+              textColor="#000"
             />
             {touched.employee_name && errors.employee_name && (
               <Text style={styles.errorText}>{errors.employee_name}</Text>
@@ -271,6 +272,7 @@ export default function LoginScreen() {
               onBlur={handleBlur('pin')}
               style={styles.input}
               error={touched.pin && !!errors.pin}
+              textColor="#000"
             />
             {touched.pin && errors.pin && (
               <Text style={styles.errorText}>{errors.pin}</Text>
@@ -300,9 +302,9 @@ const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', padding: 20, backgroundColor: '#fff' },
   logoContainer: { alignItems: 'center', marginBottom: 30 },
   logo: { width: 120, height: 120 },
-  welcomeText: { textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginTop: 15, marginBottom: 20 },
+  welcomeText: { textAlign: 'center', fontSize: 24, fontWeight: 'bold', marginTop: 15, marginBottom: 20, color: '#666' },
   label: { fontSize: 16, marginBottom: 5, color: '#333' },
-  input: { marginBottom: 15 },
+  input: { marginBottom: 15, backgroundColor: '#fff' },
   errorText: { color: 'red', marginBottom: 10 },
   forgotPasswordButton: { marginTop: 5, marginBottom: 20 },
   connectButton: { backgroundColor: '#f7c40d', paddingVertical: 10, borderRadius: 5 },
