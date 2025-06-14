@@ -488,7 +488,7 @@ export const styles = StyleSheet.create({
     color: BLUE_PALETTE.dark,
   },
   segmentedButtons: {
-    marginBottom: 8,
+    marginBottom: 4,
   },
 
   /* ======================

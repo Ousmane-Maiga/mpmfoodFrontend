@@ -178,6 +178,7 @@
 
 
 
+// (auth)/login
 
 import React from 'react';
 import { View, Image, StyleSheet, Alert } from 'react-native';

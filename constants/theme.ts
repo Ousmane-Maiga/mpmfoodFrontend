@@ -1,22 +1,28 @@
+// constants/theme.ts
+
 export const theme = {
   colors: {
     primary: '#3b82f6',
     secondary: '#64748b',
     background: '#f8fafc',
-    card: '#ffffff',
+    cardBackground: '#ffffff',
     surface: '#ffffff',
-    text: '#1e293b',
+    text: '#333',
     textSecondary: '#64748b',
-    placeholder: '#94a3b8', // A lighter grey for placeholders
+    placeholder: '#666',
     border: '#e2e8f0',
     success: '#10b981',
     warning: '#f59e0b',
     danger: '#ef4444',
-    dangerLight: '#fee2e2', // Added dangerLight (red-100 from Tailwind)
-    successLight: '#d1fae5', // Bonus: added for consistency
-    warningLight: '#fef3c7', // Bonus: added for consistency
-    primaryLight: '#dbeafe', // Bonus: added for consistency
-    backdrop: '#cbd5e1', // A light grey, similar to Tailwind's slate-300 or gray-300, suitable for borders/dividers
+    dangerLight: '#fee2e2',
+    successLight: '#d1fae5',
+    warningLight: '#fef3c7',
+    primaryLight: '#dbeafe',
+    backdrop: '#cbd5e1',
+    white: '#ffffff',
+    error: '#ef4444',
+    // FIX: Updated borderLight to be a lighter shade of the main border color
+    borderLight: '#f0f4f8', // A very light gray, suitable for subtle borders
   },
   spacing: {
     xs: 4,
@@ -24,21 +30,44 @@ export const theme = {
     md: 16,
     lg: 24,
     xl: 32,
-    xxl: 40, // Bonus: added extra large spacing
+    xxl: 40,
   },
-  radius: { // Added radius (singular) as an alias to radii for flexibility
+  // FIX: Added a top-level 'roundness' property for general use in UI components
+  roundness: 8, // A common default for moderate rounded corners
+  radius: { // Keeping for backward compatibility or specific smaller radii
     sm: 4,
     md: 8,
     lg: 12,
     xl: 16,
-    full: 999, // Bonus: full rounding for circular elements
+    full: 999,
   },
-  radii: { // Keeping existing radii for backward compatibility
+  borderRadius: { // Keeping for direct mapping to StyleSheet.borderRadius
     sm: 4,
     md: 8,
     lg: 12,
     xl: 16,
-    full: 999, // Bonus: full rounding for circular elements
+    full: 999,
+  },
+  radii: { // Keeping existing radii for backward compatibility if still in use
+    sm: 4,
+    md: 8,
+    lg: 12,
+    xl: 16,
+    full: 999,
+  },
+  typography: {
+    fontSize: {
+      xs: 12,
+      sm: 14,
+      md: 16,
+      lg: 20,
+      xl: 24,
+    },
+    fontWeight: {
+      normal: '400',
+      semibold: '600',
+      bold: '700',
+    },
   },
   text: {
     heading1: {
@@ -64,7 +93,7 @@ export const theme = {
       fontSize: 12,
       lineHeight: 16,
     },
-    small: { // Bonus: added smaller text variant
+    small: {
       fontSize: 14,
       lineHeight: 20,
     },
@@ -84,7 +113,7 @@ export const theme = {
       shadowRadius: 6,
       elevation: 3,
     },
-    lg: { // Bonus: added larger shadow variant
+    lg: {
       shadowColor: '#000',
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.15,

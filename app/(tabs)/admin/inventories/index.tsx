@@ -9,7 +9,7 @@ import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AddInventoryModal from '@/components/admin/inventories/AddInventoryModal';
 import EditInventoryModal from '@/components/admin/inventories/EditInventoryModal';
 import { getInventoryItems, createInventoryItem, updateInventoryItem, getInventoryUsage, setupInventoryUpdates } from '@/services/api';
-import { InventoryItem, InventoryItemUpdate, InventoryUsage } from '@/types/admin';
+import { InventoryItem, InventoryItemUpdate, InventoryUsage, CreateInventoryItemPayload } from '@/types/admin';
 
 type InventoryScreenRouteProp = RouteProp<TabParamList, 'admin'>;
 
@@ -129,25 +129,20 @@ export default function InventoryScreen() {
     setShowDetailModal(true);
   };
 
-  const handleAddItem = async (item: Omit<InventoryItem, 'id' | 'created_at' | 'updated_at' | 'last_restocked'>) => {
-    try {
-      setLoading(true);
-      const newItem = await createInventoryItem({
-        ...item,
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString(),
-        last_restocked: new Date().toISOString()
-      });
-      setInventoryItems(prev => [...prev, newItem]);
-      setShowAddModal(false);
-      Alert.alert('Success', 'Inventory item added successfully');
-    } catch (error) {
-      Alert.alert('Error', 'Failed to add inventory item');
-      console.error('Failed to add item:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const handleAddItem = async (item: Omit<InventoryItem, 'id' | 'updated_at' | 'last_restocked' | 'supplier'>) => {
+  try {
+    setLoading(true);
+    const newItem = await createInventoryItem(item); // pass only allowed fields
+    setInventoryItems(prev => [...prev, newItem]);
+    setShowAddModal(false);
+    Alert.alert('Success', 'Inventory item added successfully');
+  } catch (error) {
+    Alert.alert('Error', 'Failed to add inventory item');
+    console.error('Failed to add item:', error);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleUpdateItem = async (updatedItem: InventoryItem) => {
     try {
@@ -207,37 +202,37 @@ export default function InventoryScreen() {
             <Card.Content>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Name:</Text>
-                <Text>{selectedItem.name}</Text>
+                <Text style={styles.detailLabelText}>{selectedItem.name}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Type:</Text>
-                <Text>{selectedItem.type}</Text>
+                <Text style={styles.detailLabelText}>{selectedItem.type}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Quantity:</Text>
                 <Text style={{
                   color: selectedItem.quantity <= selectedItem.min_threshold
                     ? theme.colors.danger
-                    : 'inherit'
+                    : '#666'
                 }}>
                   {selectedItem.quantity} {selectedItem.unit}
                 </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Min Threshold:</Text>
-                <Text>{selectedItem.min_threshold}</Text>
+                <Text style={styles.detailLabelText}>{selectedItem.min_threshold}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Cost:</Text>
-                <Text>
+                <Text style={styles.detailLabelText}>
                   {selectedItem.cost_per_unit && typeof selectedItem.cost_per_unit === 'number'
-                    ? `$${selectedItem.cost_per_unit.toFixed(2)}`
+                    ? `${selectedItem.cost_per_unit.toFixed(2)}FCFA`
                     : 'Not specified'}
                 </Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Last Restocked:</Text>
-                <Text>{new Date(selectedItem.last_restocked).toLocaleDateString()}</Text>
+                <Text style={styles.detailLabelText}>{new Date(selectedItem.last_restocked).toLocaleDateString()}</Text>
               </View>
               <View style={styles.detailRow}>
                 <Text style={styles.detailLabel}>Supplier:</Text>
@@ -251,14 +246,26 @@ export default function InventoryScreen() {
 
               {showSupplierInfo && selectedItem.supplier && (
                 <View style={styles.supplierInfo}>
-                  <Text><Text style={styles.detailLabel}>Email:</Text> {selectedItem.supplier.email || 'N/A'}</Text>
-                  <Text><Text style={styles.detailLabel}>Phone:</Text> {selectedItem.supplier.phone || 'N/A'}</Text>
-                  <Text><Text style={styles.detailLabel}>Address:</Text> {selectedItem.supplier.address || 'N/A'}</Text>
+                  <Text><Text style={styles.detailLabel}>Email:  </Text>
+                  <Text style={styles.detailLabelText} >{selectedItem.supplier.email || 'N/A'}</Text>
+                  </Text>
+                  <Text><Text style={styles.detailLabel}>Phone:  </Text>
+                  <Text style={styles.detailLabelText} >{selectedItem.supplier.phone || 'N/A'}</Text>
+                  </Text>
+                  <Text><Text style={styles.detailLabel}>Address:  </Text>
+                   <Text style={styles.detailLabelText} >{selectedItem.supplier.address || 'N/A'}</Text>
+                   </Text>
                 </View>
               )}
             </Card.Content>
             <Card.Actions>
-              <Button onPress={() => setShowDetailModal(false)}>Close</Button>
+              <Button 
+              onPress={() => setShowDetailModal(false)}
+              style={styles.button}
+              labelStyle={{ color: theme.colors.primary }}
+              >
+                Close
+                </Button>
             </Card.Actions>
           </Card>
         )}
@@ -286,10 +293,18 @@ export default function InventoryScreen() {
           ) : (
             <DataTable>
               <DataTable.Header>
-                <DataTable.Title style={styles.centerText}>Item Name</DataTable.Title>
-                <DataTable.Title numeric style={styles.centerText}>Quantity</DataTable.Title>
-                <DataTable.Title style={styles.centerText}>Last Restocked</DataTable.Title>
-                <DataTable.Title style={styles.centerText}>Actions</DataTable.Title>
+                <DataTable.Title style={styles.centerText}>
+                  <Text style={styles.datatableText} >Item Name</Text>
+                  </DataTable.Title>
+                <DataTable.Title numeric style={styles.centerText}>
+                  <Text style={styles.datatableText}>Quantity</Text>
+                  </DataTable.Title>
+                <DataTable.Title style={styles.centerText}>
+                  <Text style={styles.datatableText}>Last Restocked</Text>
+                  </DataTable.Title>
+                <DataTable.Title style={styles.centerText}>
+                  <Text style={styles.datatableText}>Actions</Text>
+                  </DataTable.Title>
               </DataTable.Header>
 
               {inventoryItems.map(item => (
@@ -303,21 +318,25 @@ export default function InventoryScreen() {
                     </Text>
                   </DataTable.Cell>
                   <DataTable.Cell numeric style={styles.centerText}>
-                    <Text style={{
+                    <Text style={[{
                       color: item.quantity <= item.min_threshold
                         ? theme.colors.danger
-                        : 'inherit'
-                    }}>
+                        : '#666'
+                    }]}>
                       {item.quantity} {item.unit}
                     </Text>
                   </DataTable.Cell>
-                  <DataTable.Cell style={styles.centerText}>
-                    {new Date(item.last_restocked).toLocaleDateString()}
+                  <DataTable.Cell style={[styles.centerText, {color: '#666'}]}>
+                   <Text 
+                   style={{color: '#666'}} > 
+                   {new Date(item.last_restocked).toLocaleDateString()}</Text>
                   </DataTable.Cell>
                   <DataTable.Cell style={styles.centerText}>
                     <Button
                       compact
                       mode="outlined"
+                      style={styles.button}
+                      labelStyle={{ color: theme.colors.primary }}
                       onPress={() => {
                         setSelectedItem(item);
                         setShowEditModal(true);
@@ -362,27 +381,33 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
-    padding: 16,
+    padding: 8,
   },
   scrollContainer: {
     flex: 1,
+    width: '100%',
+  },
+  datatableText: {
+    color: '#000'
   },
   loader: {
     marginVertical: 20,
   },
   centerText: {
+    padding: 0,
     justifyContent: 'center',
+   
   },
   clickableText: {
-    color: '#0000EE',
-    textDecorationLine: 'underline',
+    color: theme.colors.primary,
+    textDecorationLine: 'none',
   },
   fab: {
     position: 'absolute',
     margin: 16,
     right: 0,
     bottom: 0,
-    backgroundColor: '#6200ee',
+    backgroundColor: theme.colors.primary,
   },
   modalContainer: {
     backgroundColor: 'white',
@@ -390,21 +415,29 @@ const styles = StyleSheet.create({
     margin: 20,
     borderRadius: 8,
   },
-  detailCard: {},
+  detailCard: {
+    backgroundColor: theme.colors.primaryLight,
+    color: theme.colors.text
+  },
   detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginVertical: 8,
+    
   },
   detailLabel: {
     fontWeight: 'bold',
     marginRight: 8,
+    color: '#000'
+  },
+  detailLabelText: {
+    color: theme.colors.text
   },
   supplierInfo: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: 'white',
     padding: 10,
     marginTop: 8,
-    borderRadius: 6
+    borderRadius: 6,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -434,12 +467,16 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginLeft: 4,
     textAlign: 'center',
-    color: '#666',
+    color: '#000',
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#000',
     marginTop: 4,
     textAlign: 'center',
+  },
+  button: {
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 });

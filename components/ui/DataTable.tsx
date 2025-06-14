@@ -3,7 +3,7 @@ import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, DimensionValue } from 'react-native';
 import { theme } from '../../constants/theme';
 
-interface Column<T> {
+export interface Column<T> {
   key: keyof T;
   title: string;
   numeric?: boolean;
@@ -21,7 +21,7 @@ interface DataTableProps<T> {
   loading?: boolean;
 }
 
-export function DataTable<T>({
+export function DataTable<T extends object>({
   data,
   columns,
   pageSize = 10,
@@ -42,6 +42,23 @@ export function DataTable<T>({
       const aValue = a[sortConfig.key];
       const bValue = b[sortConfig.key];
       
+      // Handle null/undefined values for comparison
+      if (aValue === null || aValue === undefined) return sortConfig.direction === 'ascending' ? 1 : -1;
+      if (bValue === null || bValue === undefined) return sortConfig.direction === 'ascending' ? -1 : 1;
+
+      // Basic comparison for string/number. Extend for Date objects if needed.
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
+        return sortConfig.direction === 'ascending' ? aValue.localeCompare(bValue) : bValue.localeCompare(aValue);
+      }
+      if (typeof aValue === 'number' && typeof bValue === 'number') {
+        return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+      }
+      
+      if (aValue instanceof Date && bValue instanceof Date) {
+        return sortConfig.direction === 'ascending' ? aValue.getTime() - bValue.getTime() : bValue.getTime() - aValue.getTime();
+      }
+
+      // Fallback for other types or mixed types (less precise)
       if (aValue < bValue) {
         return sortConfig.direction === 'ascending' ? -1 : 1;
       }
@@ -81,7 +98,7 @@ export function DataTable<T>({
       <View style={styles.header}>
         {columns.map((column) => (
           <TouchableOpacity
-            key={column.key.toString()}
+            key={column.key.toString()} // This is fine for header cells, as column keys are unique
             style={[
               styles.headerCell,
               { width: column.width || 'auto' },
@@ -103,14 +120,15 @@ export function DataTable<T>({
       {paginatedData.length > 0 ? (
         paginatedData.map((item) => (
           <TouchableOpacity
-            key={keyExtractor(item)}
+            key={keyExtractor(item)} // This is the unique key for the row
             style={styles.row}
             onPress={() => onRowPress?.(item)}
             activeOpacity={0.7}
           >
             {columns.map((column) => (
               <View 
-                key={column.key.toString()}
+                // FIX: Combine row key with column key for unique cell key
+                key={`${keyExtractor(item)}-${column.key.toString()}`} 
                 style={[styles.cell, { width: column.width || 'auto' }]}
               >
                 {column.render 
@@ -123,7 +141,7 @@ export function DataTable<T>({
                       ]}
                       numberOfLines={1}
                     >
-                      {String(item[column.key])}
+                      {String(item[column.key] ?? '')} 
                     </Text>
                   )
                 }
@@ -168,10 +186,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: theme.colors.background,
+    borderRadius: theme.roundness,
+    overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.cardBackground,
     borderBottomWidth: 1,
     borderBottomColor: theme.colors.border,
     paddingVertical: theme.spacing.sm,
@@ -181,18 +201,19 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   sortableHeader: {
-    backgroundColor: theme.colors.background,
+    // backgroundColor: theme.colors.primaryLight, // Optional: highlight sortable headers
   },
   headerText: {
-    fontWeight: '600',
+    fontWeight: theme.typography.fontWeight.semibold,
     color: theme.colors.text,
+    fontSize: theme.typography.fontSize.sm,
   },
   row: {
     flexDirection: 'row',
     borderBottomWidth: 1,
-    borderBottomColor: theme.colors.border,
+    borderBottomColor: theme.colors.borderLight,
     paddingVertical: theme.spacing.md,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.cardBackground,
   },
   cell: {
     paddingHorizontal: theme.spacing.sm,
@@ -200,6 +221,7 @@ const styles = StyleSheet.create({
   },
   cellText: {
     color: theme.colors.text,
+    fontSize: theme.typography.fontSize.sm,
   },
   numericCell: {
     textAlign: 'right',
@@ -209,13 +231,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     padding: theme.spacing.md,
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.cardBackground,
     borderTopWidth: 1,
     borderTopColor: theme.colors.border,
   },
   paginationButton: {
     padding: theme.spacing.sm,
-    borderRadius: theme.radii.sm,
+    borderRadius: theme.roundness,
     backgroundColor: theme.colors.primary,
     minWidth: 80,
     alignItems: 'center',
@@ -224,23 +246,28 @@ const styles = StyleSheet.create({
     backgroundColor: theme.colors.border,
   },
   paginationText: {
-    color: 'white',
+    color: theme.colors.white,
+    fontWeight: theme.typography.fontWeight.semibold,
   },
   paginationInfo: {
     color: theme.colors.textSecondary,
+    fontSize: theme.typography.fontSize.sm,
   },
   loadingContainer: {
     padding: theme.spacing.xl,
     alignItems: 'center',
     justifyContent: 'center',
+    flex: 1,
   },
   emptyState: {
     padding: theme.spacing.md,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: theme.colors.card,
+    backgroundColor: theme.colors.cardBackground,
+    flex: 1,
   },
   emptyText: {
     color: theme.colors.textSecondary,
+    fontSize: theme.typography.fontSize.md,
   },
 });

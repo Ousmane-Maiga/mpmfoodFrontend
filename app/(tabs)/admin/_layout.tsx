@@ -6,7 +6,7 @@ export default function AdminLayout() {
     <Stack
       screenOptions={{
         headerStyle: {
-          backgroundColor: theme.colors.card,
+          backgroundColor: theme.colors.cardBackground,
         },
         headerTintColor: theme.colors.text,
         headerTitleStyle: {
@@ -31,14 +31,6 @@ export default function AdminLayout() {
         }}
       />
 
-      {/* Employee Details */}
-      <Stack.Screen
-        name="employees/[employeeId]"
-        options={{
-          title: 'Employee Details',
-        }}
-      />
-
       {/* Dashboard - Main Admin Screen */}
       <Stack.Screen
         name="dashboard"
@@ -56,31 +48,13 @@ export default function AdminLayout() {
           headerBackTitle: 'Dashboard',
         }}
       />
-
-      {/* Inventory Item Details */}<Stack.Screen
-        name="[itemId]"
-        options={{
-          title:  'Product Details',
-          headerBackTitle: 'Inventory',
-        }}
-      />
       
-
       {/* Sales Reports */}
       <Stack.Screen
         name="sales"
         options={{
           title: 'Sales Reports',
           headerBackTitle: 'Dashboard',
-        }}
-      />
-
-      {/* Order Details */}
-      <Stack.Screen
-        name="[orderId]"
-        options={{
-            title: 'Order Details',
-            headerBackTitle: 'Sales',
         }}
       />
 

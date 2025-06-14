@@ -23,8 +23,8 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
   onEditProduct,
 }) => {
   const subtotal = orderItems.reduce((sum, item) => sum + item.total_price, 0);
-  const tax = subtotal * 0.1; // Example tax calculation
-  const total = subtotal + tax;
+  // const tax = subtotal * 0.1; // Example tax calculation
+  // const total = subtotal + tax;
 
   return (
     <View style={styles.section}>
@@ -38,7 +38,7 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.product} - {item.variant}</Text>
                 <Text style={styles.itemPrice}>
-                  ${item.unit_price.toFixed(2)} × {item.quantity} = ${item.total_price.toFixed(2)}
+                  {item.unit_price.toFixed(2)}FCFA × {item.quantity} = {item.total_price.toFixed(2)}FCFA
                 </Text>
               </View>
               <View style={styles.itemActions}>
@@ -66,15 +66,15 @@ const OrderSummary: React.FC<OrderSummaryProps> = ({
           <Divider style={styles.divider} />
           <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Subtotal:</Text>
-            <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
+            <Text style={styles.summaryValue}>{subtotal.toFixed(2)}FCFA</Text>
           </View>
-          <View style={styles.summaryRow}>
+          {/* <View style={styles.summaryRow}>
             <Text style={styles.summaryLabel}>Tax (10%):</Text>
             <Text style={styles.summaryValue}>${tax.toFixed(2)}</Text>
-          </View>
+          </View> */}
           <View style={styles.summaryRow}>
             <Text style={[styles.summaryLabel, styles.totalLabel]}>Total:</Text>
-            <Text style={[styles.summaryValue, styles.totalValue]}>${total.toFixed(2)}</Text>
+            <Text style={[styles.summaryValue, styles.totalValue]}>{subtotal.toFixed(2)}FCFA</Text>
           </View>
         </>
       )}

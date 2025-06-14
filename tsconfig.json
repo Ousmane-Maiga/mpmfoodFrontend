@@ -17,6 +17,13 @@
       "@/*": ["./*"]
     }
   },
-  "exclude": ["hooks/node_modules"],
-  "include": ["**/*.ts", "**/*.tsx"]
+  "exclude": [
+    "hooks/node_modules",
+  ],
+  "include": [
+    "**/*.ts",
+     "**/*.tsx",
+      "**/*",
+    "types/*.d.ts" 
+    ]
 }

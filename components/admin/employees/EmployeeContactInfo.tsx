@@ -4,19 +4,19 @@ import DetailRow from '../employees/DetailRow';
 import { styles } from'../../../constants/employeesStyles';
 
 interface Props {
-  id: string,
+  // id: string,
   email?: string;
   phone?: string;
 
 }
 
-const EmployeeContactInfo = ({ email, phone, id }: Props) => {
+const EmployeeContactInfo = ({ email, phone }: Props) => {
   return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Contact Information</Text>
       <DetailRow label="Email" value={email} />
       <DetailRow label="Phone" value={phone} />
-      <DetailRow label="id" value={id} />
+      {/* <DetailRow label="id" value={id} /> */}
     </View>
   );
 };

@@ -1,10 +1,11 @@
+// admin/employees/index
+
 import React, { useState, useEffect } from "react";
 import { ScrollView, StyleSheet, Modal, TouchableOpacity, ActivityIndicator, View } from "react-native";
 import { Text } from "../../../../components/ui/Text";
-import { DataTable } from "../../../../components/ui/DataTable";
+import { DataTable, Column } from '@/components/ui/DataTable';
 import { theme } from "../../../../constants/theme";
 import { getEmployees, createEmployee } from "../../../../services/api";
-// import EmployeeDetailModal from "./[employeeId]";
 import UpdateEmployeeModal from "@/components/admin/employees/UpdateEmployee";
 import AddEmployeeModal from "../../../../components/admin/employees/addEmployee";
 import { FloatingAction } from "react-native-floating-action";
@@ -132,17 +133,6 @@ export default function EmployeesScreen() {
             {
               key: "employee_phone",
               title: "Phone",
-              sortable: true,
-              width: '30%',
-              render: (value: string) => (
-                <Text style={{ color: theme.colors.text }}>
-                  {value || '-'}
-                </Text>
-              )
-            },
-            {
-              key: "employee_id",
-              title: "ID",
               sortable: true,
               width: '30%',
               render: (value: string) => (

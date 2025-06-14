@@ -6,6 +6,44 @@
       "expo-router"
     ],
     "name": "mpmfoodFrontend",
-    "slug": "mpmfoodFrontend"
+    "slug": "mpmfoodFrontend",
+    "version": "1.0.0",                 
+    "orientation": "portrait",           
+    "icon": "./assets/icon.png",       
+    "userInterfaceStyle": "automatic",  
+    "splash": {                         
+      "image": "./assets/splash.png",  
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "assetBundlePatterns": [            
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "This app needs access to your photo library to select images for the display carousel.",
+        "NSCameraUsageDescription": "This app needs access to your camera to take photos for the display carousel.",
+        "NSMicrophoneUsageDescription": "This app needs access to your microphone to record videos for the display carousel (if video selection is enabled)."
+      },
+      "bundleIdentifier": "com.yourcompany.mpmfoodFrontend" 
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
+      },
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_MEDIA_LOCATION",
+        "android.permission.RECORD_AUDIO" 
+      ],
+      "package": "com.yourcompany.mpmfoodFrontend" 
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    }
   }
 }

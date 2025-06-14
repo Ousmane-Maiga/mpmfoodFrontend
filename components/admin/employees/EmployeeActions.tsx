@@ -1,3 +1,5 @@
+// components/admin/employees/EmployeeActions
+
 import React from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
 import { styles } from '../../../constants/employeesStyles';

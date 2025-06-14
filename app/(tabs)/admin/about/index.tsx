@@ -1,10 +1,13 @@
+// app/(tabs)/admin/about.tsx
+import React from 'react';
 import { View, Text } from 'react-native';
 
-export default function PersonalisedDisplayScreen() {
-
+const AboutScreen = () => {
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Text>Personalised Dispaly Screen</Text>
+      <Text>About Screen</Text>
     </View>
   );
-}
+};
+
+export default AboutScreen;
