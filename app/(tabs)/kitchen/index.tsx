@@ -11,12 +11,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { theme } from '@/constants/theme';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import {
-    setupOrderUpdates,
+    //setupOrderUpdates,
     getKitchenOrders,
     updateKitchenOrderStatus,
     getEmployeePerformanceById,
     getEmployeePerformanceAll,
-    EmployeePerformanceMetrics
+    EmployeePerformanceMetrics,
+    setupWebSocketUpdates
 } from '@/services/api';
 
 type KitchenRouteProp = RouteProp<TabParamList, 'kitchen'>;
@@ -167,33 +168,42 @@ export default function KitchenScreen() {
         }
     };
 
-    // Initial data fetch and WebSocket setup
+   // Initial data fetch and WebSocket setup
     useEffect(() => {
         if (employee?.id) {
             fetchOrders();
             fetchPerformance();
 
-            const cleanup = setupOrderUpdates((updatedOrder) => {
-                console.log('Order update received via WebSocket:', updatedOrder);
-                setOrders(prev => {
-                    const orderExists = prev.some(o => o.id === updatedOrder.id);
-                    if (orderExists) {
-                        return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
-                    } else {
-                        // Only add if it's a pending/in_progress/ready order
-                        if (['pending', 'in_progress', 'ready'].includes(updatedOrder.status)) {
-                             return [updatedOrder, ...prev];
+            // FIX: Use setupWebSocketUpdates instead of setupOrderUpdates
+            const cleanupWs = setupWebSocketUpdates(employee.id, {
+                onOrderUpdate: (updatedOrder) => {
+                    console.log('Order update received via WebSocket:', updatedOrder);
+                    setOrders(prev => {
+                        const orderExists = prev.some(o => o.id === updatedOrder.id);
+                        if (orderExists) {
+                            return prev.map(o => o.id === updatedOrder.id ? updatedOrder : o);
+                        } else {
+                            // Only add if it's a pending/in_progress/ready order
+                            if (['pending', 'in_progress', 'ready'].includes(updatedOrder.status)) {
+                                return [updatedOrder, ...prev];
+                            }
+                            return prev; // If status is not relevant for kitchen, don't add
                         }
-                        return prev; // If status is not relevant for kitchen, don't add
+                    });
+                    // Re-fetch performance if an order completion comes via WebSocket
+                    if (updatedOrder.status === 'completed') {
+                        fetchPerformance();
                     }
-                });
-                // Re-fetch performance if an order completion comes via WebSocket
-                if (updatedOrder.status === 'completed') {
+                },
+                // You can add other callbacks here if needed, e.g., onEmployeeStatusUpdate
+                onEmployeeStatusUpdate: (data: { employeeId: string, status: string, timestamp: string }) => {
+                    console.log('Employee status update via WS:', data);
+                    // Trigger performance re-fetch to update team member statuses
                     fetchPerformance();
                 }
             });
 
-            return cleanup; // Cleanup WebSocket on component unmount
+            return cleanupWs; // Cleanup WebSocket on component unmount
         }
     }, [employee?.id]); // Depend on employee.id for initial fetches and WebSocket setup
 
@@ -472,14 +482,16 @@ export default function KitchenScreen() {
                 )}
 
                 <Button
-                    mode="contained"
-                    onPress={() => setShowKitchen(true)}
-                    style={[styles.button, { backgroundColor: theme.colors.primary }]}
-                    loading={loading}
-                    disabled={loading || onBreak}
-                >
-                    Open Kitchen View
-                </Button>
+                mode="contained"
+                onPress={() => setShowKitchen(true)}
+                style={[styles.button, { backgroundColor: theme.colors.primary }]}
+                labelStyle={{ color: 'white' }}
+                loading={loading}
+                disabled={loading || onBreak}
+                icon="silverware-fork-knife" // Optional: Add an icon
+            >
+                Open Kitchen View
+            </Button>
 
                 {onBreak && (
                     <Text style={[styles.breakText, { color: theme.colors.danger }]}>
@@ -501,160 +513,148 @@ export default function KitchenScreen() {
 const styles = StyleSheet.create({
     safeArea: {
         flex: 1,
+        backgroundColor: theme.colors.background,
     },
     container: {
         flex: 1,
-        padding: 16,
+        padding: theme.spacing.md,
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: theme.colors.background,
     },
     userContainer: {
-        flex: 1,
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        marginBottom: 20,
-        paddingBottom: 10,
+        paddingBottom: theme.spacing.md,
         borderBottomWidth: 1,
-        borderBottomColor: '#e0e0e0',
+        borderBottomColor: theme.colors.border,
+        marginBottom: theme.spacing.lg,
     },
     userInfo: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
-        justifyContent: 'flex-start'
+        alignItems: 'center',
     },
     userText: {
-        marginLeft: 10,
+        marginLeft: theme.spacing.sm,
+        flexDirection: 'column',
     },
     userName: {
-        fontWeight: 'bold',
-        fontSize: 16,
-        color: '#666',
+        fontSize: theme.typography.fontSize.lg,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: theme.colors.text,
     },
     userRole: {
-        fontSize: 14,
-        color: '#666',
+        fontSize: theme.typography.fontSize.md,
+        color: theme.colors.textSecondary,
     },
     statusDot: {
-        width: 12,
-        height: 12,
-        borderRadius: 6,
-        marginLeft: 10,
-        marginTop: 4, // Adjust as needed for alignment
+        width: 10,
+        height: 10,
+        borderRadius: 5,
+        borderWidth: 1,
+        borderColor: theme.colors.background,
     },
     actions: {
         flexDirection: 'column',
-        gap: 4,
-    },
-    button: {
-        marginTop: 16,
-    },
-    breakText: {
-        textAlign: 'center',
-        color: '#FF9800',
-        marginTop: 16,
-        fontStyle: 'italic',
+        gap: theme.spacing.sm,
     },
     statsContainer: {
         flexDirection: 'row',
         justifyContent: 'space-around',
-        marginVertical: 16,
-        padding: 16,
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 2,
+        backgroundColor: theme.colors.cardBackground,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
+        ...theme.shadows.md,
     },
     statItem: {
         alignItems: 'center',
-        justifyContent: 'center',
-        flexShrink: 1,
-    },
-    statValueContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
+        flex: 1,
     },
     statValue: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginLeft: 4,
-        textAlign: 'center',
-        color: '#666',
+        fontSize: theme.typography.fontSize.xl,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: theme.colors.text,
     },
     statLabel: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 4,
-        textAlign: 'center',
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.textSecondary,
+        marginTop: theme.spacing.xs,
     },
     teamSection: {
-        marginTop: 16,
-        backgroundColor: '#fff',
-        borderRadius: 8,
-        padding: 16,
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.2,
-        shadowRadius: 2,
-        elevation: 2,
+        backgroundColor: theme.colors.cardBackground,
+        borderRadius: theme.borderRadius.lg,
+        padding: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
+        ...theme.shadows.md,
     },
     sectionTitle: {
-        fontSize: 16,
-        fontWeight: 'bold',
-        marginBottom: 8,
-        color: '#666',
+        fontSize: theme.typography.fontSize.lg,
+        fontWeight: theme.typography.fontWeight.bold,
+        color: theme.colors.text,
+        marginBottom: theme.spacing.md,
     },
     divider: {
-        marginVertical: 8,
-        backgroundColor: '#e0e0e0',
+        backgroundColor: theme.colors.border,
+        marginBottom: theme.spacing.md,
     },
     teamMember: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        paddingVertical: 8,
-        color: '#666',
+        paddingVertical: theme.spacing.sm,
+        borderBottomWidth: 1,
+        borderBottomColor: theme.colors.borderLight,
     },
     memberInfo: {
-        flex: 1,
-
+        flexDirection: 'row',
+        alignItems: 'center',
     },
     memberStatus: {
         flexDirection: 'row',
         alignItems: 'center',
+        marginRight: theme.spacing.sm,
     },
     memberDot: {
         width: 10,
         height: 10,
         borderRadius: 5,
-        marginRight: 8,
+        marginRight: theme.spacing.xs,
     },
     memberName: {
-        fontWeight: '500',
-        color: '#666',
+        fontSize: theme.typography.fontSize.md,
+        fontWeight: theme.typography.fontWeight.semibold,
+        color: theme.colors.text,
     },
     memberRole: {
-        fontSize: 12,
-        color: '#666',
-        marginTop: 2,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.textSecondary,
+        marginLeft: theme.spacing.xs,
     },
     memberStats: {
         flexDirection: 'row',
-        alignItems: 'center',
-        gap: 12,
+        gap: theme.spacing.md,
     },
     memberStat: {
-        fontSize: 12,
-        color: '#666',
-        marginLeft: 4,
+        fontSize: theme.typography.fontSize.sm,
+        color: theme.colors.textSecondary,
     },
-    loadingContainer: {
-        padding: 16,
-        alignItems: 'center',
-        justifyContent: 'center',
-        flex: 1, // Ensure it takes full space for centering
-        // justifyContent: 'center',
+    breakText: {
+        textAlign: 'center',
+        fontSize: theme.typography.fontSize.md,
+        fontWeight: theme.typography.fontWeight.semibold,
+        marginTop: theme.spacing.md,
+        marginBottom: theme.spacing.lg,
+        color: theme.colors.danger,
+    },
+    button: {
+        paddingVertical: theme.spacing.sm,
+        borderRadius: theme.borderRadius.xl,
+        backgroundColor: theme.colors.primary,
     },
 });
+

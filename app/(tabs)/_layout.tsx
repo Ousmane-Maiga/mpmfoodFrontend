@@ -14,7 +14,11 @@ const Tab = createBottomTabNavigator();
 const router = useRouter();
 
 const TABS = [
-  { name: 'home', component: HomeScreen, icon: 'home', roles: ['admin', 'cashier', 'kitchen', 'display'] },
+  // { name: 'home', 
+  //   component: HomeScreen, 
+  //   icon: 'home', 
+  //   roles: ['admin', 'cashier', 'kitchen', 'display'] 
+  // },
   { name: 'admin', 
     component: AdminScreen, 
     icon: 'settings', 
@@ -23,19 +27,23 @@ const TABS = [
     name: 'cashier', 
     component: CashierScreen, 
     icon: 'cash', 
-    roles: ['admin', 'cashier'],
+    roles: ['admin', 'cashier', 'manager'],
     initialParams: { user: null } // Will be filled dynamically
   },
   { 
     name: 'kitchen', 
     component: KitchenScreen, 
     icon: 'restaurant', 
-    roles: ['admin', 'kitchen'],
+    roles: ['admin', 'kitchen', 'manager'],
     initialParams: { user: null } // Will be filled dynamically
   },
-  { name: 'display', component: DisplayScreen, icon: 'tv', roles: ['admin', 'display'] },
+  { name: 'display', 
+    component: DisplayScreen, 
+    icon: 'tv', 
+    roles: ['admin', 'display', 'manager'],
+   initialParams: { user: null } // Will be filled dynamically},
+  },
 ];
-
 export default function AppLayout() {
   const { user, loading } = useAuth();
 

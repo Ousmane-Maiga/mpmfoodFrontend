@@ -3,20 +3,21 @@
     "entryPoint": "./index.ts",
     "scheme": "acme",
     "plugins": [
-      "expo-router"
+      "expo-router",
+      "expo-localization"
     ],
     "name": "mpmfoodFrontend",
     "slug": "mpmfoodFrontend",
-    "version": "1.0.0",                 
-    "orientation": "portrait",           
-    "icon": "./assets/icon.png",       
-    "userInterfaceStyle": "automatic",  
-    "splash": {                         
-      "image": "./assets/splash.png",  
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [            
+    "assetBundlePatterns": [
       "**/*"
     ],
     "ios": {
@@ -26,7 +27,7 @@
         "NSCameraUsageDescription": "This app needs access to your camera to take photos for the display carousel.",
         "NSMicrophoneUsageDescription": "This app needs access to your microphone to record videos for the display carousel (if video selection is enabled)."
       },
-      "bundleIdentifier": "com.yourcompany.mpmfoodFrontend" 
+      "bundleIdentifier": "com.yourcompany.mpmfoodFrontend"
     },
     "android": {
       "adaptiveIcon": {
@@ -38,9 +39,9 @@
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.ACCESS_MEDIA_LOCATION",
-        "android.permission.RECORD_AUDIO" 
+        "android.permission.RECORD_AUDIO"
       ],
-      "package": "com.yourcompany.mpmfoodFrontend" 
+      "package": "com.yourcompany.mpmfoodFrontend"
     },
     "web": {
       "favicon": "./assets/favicon.png"

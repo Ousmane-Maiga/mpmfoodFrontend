@@ -108,11 +108,11 @@ export function DataTable<T extends object>({
             disabled={!column.sortable}
           >
             <Text style={styles.headerText}>
-              {column.title}
-              {sortConfig?.key === column.key && (
-                <Text> {sortConfig.direction === 'ascending' ? '↑' : '↓'}</Text>
-              )}
-            </Text>
+            {column.title}
+            {sortConfig?.key === column.key && (
+              sortConfig.direction === 'ascending' ? ' ↑' : ' ↓'
+            )}
+          </Text>
           </TouchableOpacity>
         ))}
       </View>

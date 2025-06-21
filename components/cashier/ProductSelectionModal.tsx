@@ -140,7 +140,7 @@ const ProductSelectionModal: React.FC<ProductSelectionModalProps> = ({
                                                     setShowVariantDropdown(false);
                                                 }}
                                             >
-                                                <Text>{variant.name} (${variant.price.toFixed(2)})</Text>
+                                                <Text>{variant.name} ({variant.price.toFixed(2)} FCFA)</Text>
                                             </TouchableOpacity>
                                         ))}
                                     </ScrollView>

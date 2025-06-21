@@ -1,3 +1,5 @@
+// constant/employeeStyles
+
 import { StyleSheet } from 'react-native';
 import { theme } from './theme';
 
@@ -118,7 +120,7 @@ export const styles = StyleSheet.create({
   top: 10,
   right: 15,
   zIndex: 10,
-  backgroundColor: theme.colors.card,
+  backgroundColor: theme.colors.cardBackground,
   borderRadius: 20,
   padding: 5,
   shadowColor: '#000',

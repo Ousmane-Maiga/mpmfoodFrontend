@@ -1,3 +1,5 @@
+// components/ui/Text
+
 import React from "react";
 import { Text as RNText, TextProps as RNTextProps } from "react-native";
 

@@ -127,106 +127,219 @@ const PerformancesScreen = () => {
     const [selectedEmployeeForDetail, setSelectedEmployeeForDetail] = useState<EmployeePerformanceMetrics | null>(null);
     const [isDetailModalVisible, setIsDetailModalVisible] = useState(false);
 
-    const fetchPerformance = useCallback(async () => {
-        setLoading(true);
-        setError(null);
-        try {
-            const { from, to } = getPeriodDates(selectedPeriod, customStartDate, customEndDate);
-            const rawData = await getEmployeePerformanceAll(undefined, from, to); // Fetch raw daily aggregates
+    // const fetchPerformance = useCallback(async () => {
+    //     setLoading(true);
+    //     setError(null);
+    //     try {
+    //         const { from, to } = getPeriodDates(selectedPeriod, customStartDate, customEndDate);
+    //         const rawData = await getEmployeePerformanceAll(undefined, from, to); // Fetch raw daily aggregates
 
-            let processedData: EmployeePerformanceMetrics[] = [];
+    //         let processedData: EmployeePerformanceMetrics[] = [];
 
-            if (selectedPeriod === 'daily') {
-                // For daily view, data is already per-day per-employee, so use directly
-                processedData = rawData;
-            } else {
-                // For weekly/monthly, aggregate data per employee
-                const aggregatedMap = new Map<string, EmployeePerformanceMetrics>();
+    //         if (selectedPeriod === 'daily') {
+    //             // For daily view, data is already per-day per-employee, so use directly
+    //             processedData = rawData;
+    //         } else {
+    //             // For weekly/monthly, aggregate data per employee
+    //             const aggregatedMap = new Map<string, EmployeePerformanceMetrics>();
 
-                rawData.forEach(item => {
-                    if (!aggregatedMap.has(item.employeeId)) {
-                        // Initialize with current item's general employee info and default all metrics to 0
-                        aggregatedMap.set(item.employeeId, {
-                            employeeId: item.employeeId,
-                            employeeName: item.employeeName,
-                            employeeRole: item.employeeRole,
-                            loginDurationMinutes: 0,
-                            breakDurationMinutes: 0,
-                            daysOffCount: 0,
-                            ordersHandled: 0,
-                            averageOrderProcessingTimeSeconds: 0,
-                            itemsPrepared: 0,
-                            averageItemPreparationTimeSeconds: 0,
-                            imagesUploaded: 0,
-                            adsManaged: 0,
-                            gifsUploaded: 0,
-                            customImagesUploaded: 0,
-                            lastActivityAt: undefined, // Will be updated to the latest activity date
-                            // Initialize other role-specific metrics as 0 if they exist on the interface
-                            customerInteractionScore: undefined,
-                            inventoryRequestsHandled: undefined,
-                        });
-                    }
+    //             rawData.forEach(item => {
+    //                 if (!aggregatedMap.has(item.employeeId)) {
+    //                     // Initialize with current item's general employee info and default all metrics to 0
+    //                     aggregatedMap.set(item.employeeId, {
+    //                         employeeId: item.employeeId,
+    //                         employeeName: item.employeeName,
+    //                         employeeRole: item.employeeRole,
+    //                         loginDurationMinutes: 0,
+    //                         breakDurationMinutes: 0,
+    //                         daysOffCount: 0,
+    //                         ordersHandled: 0,
+    //                         averageOrderProcessingTimeSeconds: 0,
+    //                         itemsPrepared: 0,
+    //                         averageItemPreparationTimeSeconds: 0,
+    //                         imagesUploaded: 0,
+    //                         adsManaged: 0,
+    //                         gifsUploaded: 0,
+    //                         customImagesUploaded: 0,
+    //                         lastActivityAt: undefined, // Will be updated to the latest activity date
+    //                         // Initialize other role-specific metrics as 0 if they exist on the interface
+    //                         customerInteractionScore: undefined,
+    //                         inventoryRequestsHandled: undefined,
+    //                     });
+    //                 }
 
-                    const currentAggregate = aggregatedMap.get(item.employeeId)!;
+    //                 const currentAggregate = aggregatedMap.get(item.employeeId)!;
 
-                    // Sum up duration and count metrics
-                    currentAggregate.loginDurationMinutes += item.loginDurationMinutes || 0;
-                    currentAggregate.breakDurationMinutes += item.breakDurationMinutes || 0;
-                    currentAggregate.daysOffCount += item.daysOffCount || 0;
-                    currentAggregate.ordersHandled! += item.ordersHandled || 0; // Use ! and || 0
-                    currentAggregate.itemsPrepared! += item.itemsPrepared || 0;
-                    currentAggregate.imagesUploaded! += item.imagesUploaded || 0;
-                    currentAggregate.adsManaged! += item.adsManaged || 0;
-                    currentAggregate.gifsUploaded! += item.gifsUploaded || 0;
-                    currentAggregate.customImagesUploaded! += item.customImagesUploaded || 0;
+    //                 // Sum up duration and count metrics
+    //                 currentAggregate.loginDurationMinutes += item.loginDurationMinutes || 0;
+    //                 currentAggregate.breakDurationMinutes += item.breakDurationMinutes || 0;
+    //                 currentAggregate.daysOffCount += item.daysOffCount || 0;
+    //                 currentAggregate.ordersHandled! += item.ordersHandled || 0; // Use ! and || 0
+    //                 currentAggregate.itemsPrepared! += item.itemsPrepared || 0;
+    //                 currentAggregate.imagesUploaded! += item.imagesUploaded || 0;
+    //                 currentAggregate.adsManaged! += item.adsManaged || 0;
+    //                 currentAggregate.gifsUploaded! += item.gifsUploaded || 0;
+    //                 currentAggregate.customImagesUploaded! += item.customImagesUploaded || 0;
 
-                    // For averages, we'll need to sum up total seconds and total counts
-                    // Then calculate the average at the end
-                    const totalOrderProcessingSecondsForEmployee = (currentAggregate.averageOrderProcessingTimeSeconds || 0) * (currentAggregate.ordersHandled || 0);
-                    const newTotalOrderProcessingSeconds = totalOrderProcessingSecondsForEmployee + (item.averageOrderProcessingTimeSeconds || 0) * (item.ordersHandled || 0); // Avg * Count
-                    if (currentAggregate.ordersHandled! > 0) {
-                        currentAggregate.averageOrderProcessingTimeSeconds = Math.round(newTotalOrderProcessingSeconds / currentAggregate.ordersHandled!);
-                    } else {
-                        currentAggregate.averageOrderProcessingTimeSeconds = 0;
-                    }
+    //                 // For averages, we'll need to sum up total seconds and total counts
+    //                 // Then calculate the average at the end
+    //                 const totalOrderProcessingSecondsForEmployee = (currentAggregate.averageOrderProcessingTimeSeconds || 0) * (currentAggregate.ordersHandled || 0);
+    //                 const newTotalOrderProcessingSeconds = totalOrderProcessingSecondsForEmployee + (item.averageOrderProcessingTimeSeconds || 0) * (item.ordersHandled || 0); // Avg * Count
+    //                 if (currentAggregate.ordersHandled! > 0) {
+    //                     currentAggregate.averageOrderProcessingTimeSeconds = Math.round(newTotalOrderProcessingSeconds / currentAggregate.ordersHandled!);
+    //                 } else {
+    //                     currentAggregate.averageOrderProcessingTimeSeconds = 0;
+    //                 }
                     
-                    const totalItemPreparationSecondsForEmployee = (currentAggregate.averageItemPreparationTimeSeconds || 0) * (currentAggregate.itemsPrepared || 0);
-                    const newTotalItemPreparationSeconds = totalItemPreparationSecondsForEmployee + (item.averageItemPreparationTimeSeconds || 0) * (item.itemsPrepared || 0);
-                    if (currentAggregate.itemsPrepared! > 0) {
-                        currentAggregate.averageItemPreparationTimeSeconds = Math.round(newTotalItemPreparationSeconds / currentAggregate.itemsPrepared!);
-                    } else {
-                        currentAggregate.averageItemPreparationTimeSeconds = 0;
-                    }
+    //                 const totalItemPreparationSecondsForEmployee = (currentAggregate.averageItemPreparationTimeSeconds || 0) * (currentAggregate.itemsPrepared || 0);
+    //                 const newTotalItemPreparationSeconds = totalItemPreparationSecondsForEmployee + (item.averageItemPreparationTimeSeconds || 0) * (item.itemsPrepared || 0);
+    //                 if (currentAggregate.itemsPrepared! > 0) {
+    //                     currentAggregate.averageItemPreparationTimeSeconds = Math.round(newTotalItemPreparationSeconds / currentAggregate.itemsPrepared!);
+    //                 } else {
+    //                     currentAggregate.averageItemPreparationTimeSeconds = 0;
+    //                 }
 
-                    // Update lastActivityAt to the latest timestamp
-                    if (item.lastActivityAt) {
-                        const itemLastActivityDate = new Date(item.lastActivityAt);
-                        if (!currentAggregate.lastActivityAt || itemLastActivityDate > currentAggregate.lastActivityAt) {
-                            currentAggregate.lastActivityAt = itemLastActivityDate;
-                        }
-                    }
+    //                // FIX: Update lastActivityAt to the latest timestamp (as a string)
+    //                 if (item.lastActivityAt) {
+    //                     const existingLastActivity = currentAggregate.lastActivityAt ? new Date(currentAggregate.lastActivityAt) : null;
+    //                     const newItemLastActivity = new Date(item.lastActivityAt);
+                        
+    //                     if (!existingLastActivity || newItemLastActivity.getTime() > existingLastActivity.getTime()) {
+    //                         currentAggregate.lastActivityAt = item.lastActivityAt; // Keep as string
+    //                     }
+    //                 }
 
-                    // For other optional metrics, take the latest or a combined value if applicable
-                    if (item.customerInteractionScore !== undefined) {
-                        currentAggregate.customerInteractionScore = item.customerInteractionScore; // Or average/latest as needed
-                    }
-                    if (item.inventoryRequestsHandled !== undefined) {
-                        currentAggregate.inventoryRequestsHandled = item.inventoryRequestsHandled; // Or sum
-                    }
-                });
-                processedData = Array.from(aggregatedMap.values());
-            }
-            setPerformanceData(processedData);
+    //                 // For other optional metrics, take the latest or a combined value if applicable
+    //                 if (item.customerInteractionScore !== undefined) {
+    //                     currentAggregate.customerInteractionScore = item.customerInteractionScore; // Or average/latest as needed
+    //                 }
+    //                 if (item.inventoryRequestsHandled !== undefined) {
+    //                     currentAggregate.inventoryRequestsHandled = item.inventoryRequestsHandled; // Or sum
+    //                 }
+    //             });
+    //             processedData = Array.from(aggregatedMap.values());
+    //         }
+    //         setPerformanceData(processedData);
 
-        } catch (err: any) {
-            console.error("Error fetching performance data:", err);
-            setError("Failed to fetch performance data. " + (err.message || 'Please try again.'));
-        } finally {
-            setLoading(false);
+    //     } catch (err: any) {
+    //         console.error("Error fetching performance data:", err);
+    //         setError("Failed to fetch performance data. " + (err.message || 'Please try again.'));
+    //     } finally {
+    //         setLoading(false);
+    //     }
+    // }, [selectedPeriod, customStartDate, customEndDate]);
+
+    const fetchPerformance = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+        const { from, to } = getPeriodDates(selectedPeriod, customStartDate, customEndDate);
+        const rawData = await getEmployeePerformanceAll(undefined, from, to);
+
+        let processedData: EmployeePerformanceMetrics[] = [];
+
+        if (selectedPeriod === 'daily') {
+            processedData = rawData;
+        } else {
+            const aggregatedMap = new Map<string, EmployeePerformanceMetrics>();
+
+            rawData.forEach(item => {
+                if (!aggregatedMap.has(item.employeeId)) {
+                    aggregatedMap.set(item.employeeId, {
+                        employeeId: item.employeeId,
+                        employeeName: item.employeeName,
+                        employeeRole: item.employeeRole,
+                        loginDurationMinutes: 0,
+                        breakDurationMinutes: 0,
+                        daysOffCount: 0,
+                        ordersHandled: 0, // Explicitly initialized to 0
+                        averageOrderProcessingTimeSeconds: 0,
+                        itemsPrepared: 0,
+                        averageItemPreparationTimeSeconds: 0,
+                        imagesUploaded: 0,
+                        adsManaged: 0,
+                        gifsUploaded: 0,
+                        customImagesUploaded: 0,
+                        lastActivityAt: undefined,
+                        customerInteractionScore: undefined,
+                        inventoryRequestsHandled: 0, // Explicitly initialized to 0
+                    });
+                }
+
+                const currentAggregate = aggregatedMap.get(item.employeeId)!;
+
+                // Sum up all metrics with proper null checks
+                currentAggregate.loginDurationMinutes += item.loginDurationMinutes || 0;
+                currentAggregate.breakDurationMinutes += item.breakDurationMinutes || 0;
+                currentAggregate.daysOffCount += item.daysOffCount || 0;
+                
+                // Safe addition with null checks
+                currentAggregate.ordersHandled = (currentAggregate.ordersHandled || 0) + (item.ordersHandled || 0);
+                
+                currentAggregate.itemsPrepared = (currentAggregate.itemsPrepared || 0) + (item.itemsPrepared || 0);
+                currentAggregate.imagesUploaded = (currentAggregate.imagesUploaded || 0) + (item.imagesUploaded || 0);
+                currentAggregate.adsManaged = (currentAggregate.adsManaged || 0) + (item.adsManaged || 0);
+                currentAggregate.gifsUploaded = (currentAggregate.gifsUploaded || 0) + (item.gifsUploaded || 0);
+                currentAggregate.customImagesUploaded = (currentAggregate.customImagesUploaded || 0) + (item.customImagesUploaded || 0);
+
+                // Calculate weighted averages for processing times
+                if ((item.ordersHandled || 0) > 0 && item.averageOrderProcessingTimeSeconds) {
+                    const currentOrders = currentAggregate.ordersHandled || 0;
+                    const itemOrders = item.ordersHandled || 0;
+                    // const totalOrderTime = (currentAggregate.averageOrderProcessingTimeSeconds * currentOrders) + 
+                                         (item.averageOrderProcessingTimeSeconds * itemOrders);
+                    const totalOrders = currentOrders + itemOrders;
+                    
+                    currentAggregate.ordersHandled = totalOrders;
+                    // currentAggregate.averageOrderProcessingTimeSeconds = totalOrders > 0 
+                    //     ? Math.round(totalOrderTime / totalOrders) 
+                    //     : 0;
+                }
+
+                if ((item.itemsPrepared || 0) > 0 && item.averageItemPreparationTimeSeconds) {
+                    const currentItems = currentAggregate.itemsPrepared || 0;
+                    const itemItems = item.itemsPrepared || 0;
+                    // const totalItemTime = (currentAggregate.averageItemPreparationTimeSeconds * currentItems) + 
+                                        (item.averageItemPreparationTimeSeconds * itemItems);
+                    const totalItems = currentItems + itemItems;
+                    
+                    currentAggregate.itemsPrepared = totalItems;
+                    // currentAggregate.averageItemPreparationTimeSeconds = totalItems > 0 
+                    //     ? Math.round(totalItemTime / totalItems) 
+                    //     : 0;
+                }
+
+                // Update last activity to the most recent one
+                if (item.lastActivityAt) {
+                    const existingLastActivity = currentAggregate.lastActivityAt ? new Date(currentAggregate.lastActivityAt) : null;
+                    const newItemLastActivity = new Date(item.lastActivityAt);
+                    
+                    if (!existingLastActivity || newItemLastActivity.getTime() > existingLastActivity.getTime()) {
+                        currentAggregate.lastActivityAt = item.lastActivityAt;
+                    }
+                }
+
+                // Update other metrics
+                if (item.customerInteractionScore !== undefined) {
+                    currentAggregate.customerInteractionScore = item.customerInteractionScore;
+                }
+                if (item.inventoryRequestsHandled !== undefined) {
+                    currentAggregate.inventoryRequestsHandled = (currentAggregate.inventoryRequestsHandled || 0) + item.inventoryRequestsHandled;
+                }
+            });
+
+            processedData = Array.from(aggregatedMap.values());
         }
-    }, [selectedPeriod, customStartDate, customEndDate]);
+        setPerformanceData(processedData);
 
+    } catch (err: any) {
+        console.error("Error fetching performance data:", err);
+        setError("Failed to fetch performance data. " + (err.message || 'Please try again.'));
+    } finally {
+        setLoading(false);
+    }
+}, [selectedPeriod, customStartDate, customEndDate]);
+    
     useEffect(() => {
         fetchPerformance();
     }, [fetchPerformance]);
@@ -259,13 +372,13 @@ const PerformancesScreen = () => {
             sortable: true,
             width: '20%',
         },
-        {
-            key: "loginDurationMinutes",
-            title: "Login (min)",
-            sortable: true,
-            width: '20%',
-            render: (value: any) => <Text>{value || 0}</Text>
-        },
+        // {
+        //     key: "loginDurationMinutes",
+        //     title: "Login (min)",
+        //     sortable: true,
+        //     width: '20%',
+        //     render: (value: any) => <Text>{value || 0}</Text>
+        // },
         {
             key: "ordersHandled",
             title: "Orders",
@@ -346,7 +459,7 @@ const PerformancesScreen = () => {
                 employee={selectedEmployeeForDetail}
             />
         </View>
-    );
+    ); 
 };
 
 const screenStyles = StyleSheet.create({
@@ -493,3 +606,7 @@ const detailModalStyles = StyleSheet.create({
 });
 
 export default PerformancesScreen;
+
+
+
+
